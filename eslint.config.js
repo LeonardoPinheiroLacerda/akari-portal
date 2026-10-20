@@ -7,7 +7,7 @@ import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   // Gerado pelo Orval (npm run api:generate)
-  { ignores: ['dist', 'src/api/generated', 'design'] },
+  { ignores: ['dist', 'src/api/generated'] },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],

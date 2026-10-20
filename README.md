@@ -88,7 +88,6 @@ src/
   features/       lógica compartilhada por área (providers, settings, notifications, playback, item)
   pages/          uma pasta por tela
   lib/            utilitários (formatação, armazenamento local, debounce)
-design/           referência de design (protótipo em HTML e handoff)
 ```
 
 ### Telas
@@ -123,7 +122,7 @@ Resumo abaixo; os detalhes e as decisões ficam em [`src/api/README.md`](src/api
 ## Convenções
 
 - Textos da interface em português, sem jargão técnico nem nomes de endpoint.
-- O design de referência é a variação **A · Lanterna** do protótipo em [`design/`](design/README.md).
+- O visual segue a variação **A · Lanterna** do protótipo de design (handoff mantido fora do repositório).
 - Preferências do navegador ficam no `localStorage` com prefixo `akari.`: tema, menu expandido,
   painel de filtros do catálogo e o último teste de conexão de cada provedor.
 - Formatação com Prettier e lint com ESLint (configurações na raiz).

@@ -5,8 +5,8 @@ no próprio projeto, com Tailwind e os tokens do design, sobre primitivos do Rad
 comportamento de acessibilidade a herdar (diálogo, select, tooltip, radio, checkbox, switch). Não
 há CLI do shadcn/ui configurado: os componentes seguem o estilo dele, mas são mantidos à mão.
 
-Os textos e o visual seguem a variação **A · Lanterna** do design de referência
-([`design/README.md`](../../../design/README.md)).
+Os textos e o visual seguem a variação **A · Lanterna** do protótipo de design (handoff mantido
+fora do repositório).
 
 ## Tokens
 
