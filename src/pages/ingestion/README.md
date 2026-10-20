@@ -14,7 +14,7 @@ segundo plano; a tela só dispara e avisa.
    ([`src/features/providers`](../../features/providers/README.md)). Sem provedores, a tela manda
    para Provedores.
 2. **Tipo do conteúdo** — Anime, Série ou Filme (`mediaType`). Vale só para as pastas novas; as que
-   já estão no catálogo mantêm o tipo que têm. **Confirmado** (`openapi.yaml`, operação
+   já estão no catálogo mantêm o tipo que têm. **Confirmado** (contrato, operação
    `ingestProviderSubtree`).
 3. **Diretório raiz** — caminho dentro do provedor; vazio ingere o provedor inteiro. As barras do
    começo e do fim são removidas antes de enviar. "Procurar" abre o navegador de pastas.
@@ -26,7 +26,7 @@ backend recusa a ingestão nesse caso ([`src/features/settings`](../../features/
 
 - O backend responde `202` na hora e faz o resto em segundo plano: lista o diretório no provedor,
   remove do catálogo o que não existe mais lá, cria as pastas e arquivos novos e vincula cada pasta
-  (AniList → TMDB → episódios). **Confirmado** (`openapi.yaml`, `ingestProviderSubtree`).
+  (AniList → TMDB → episódios). **Confirmado** (contrato, `ingestProviderSubtree`).
 - A tela só confirma que a ingestão começou. O resultado chega pelas notificações: uma `INFO` ao
   terminar, `ERROR` se a ingestão falhar, e `WARNING`/`ERROR` para cada pasta que não conseguiu
   vincular (sem interromper as demais).
@@ -52,7 +52,7 @@ provedores não justifica carregar por partes.
 "Remover do catálogo" pede confirmação e chama `DELETE /v1/ingestion/providers/{id}?rootPath=`:
 remove as pastas, os arquivos e os vínculos de metadata do trecho escolhido (ou de tudo do
 provedor, com o diretório vazio), sem tocar em nada no provedor. A operação é idempotente e
-responde `204` mesmo quando nada casa. **Confirmado** (`openapi.yaml`, `removeIngestedSubtree`).
+responde `204` mesmo quando nada casa. **Confirmado** (contrato, `removeIngestedSubtree`).
 
 Arquivos desse trecho que já estavam no cache de vídeo somem da tela de Cache, mas continuam no
 disco: a linha do cache sai em cascata com o arquivo (`video_file_cache.file_id ... ON DELETE

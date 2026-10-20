@@ -9,7 +9,6 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "api:generate": "orval --config orval.config.ts",
-    "api:sync": "cp ../akari/src/main/resources/META-INF/openapi.yaml ./openapi.yaml && npm run api:generate",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "lint:oxlint": "oxlint",

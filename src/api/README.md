@@ -14,21 +14,22 @@ hooks gerados e, para os streams, o `useEventSource`.
 
 ## Cliente gerado (`generated/`)
 
-Gerado de [`openapi.yaml`](../../openapi.yaml) pelo Orval, com a configuração de
+Gerado pelo Orval a partir do contrato que o backend serve em `/q/openapi` (endereço de
+`AKARI_API_URL`, padrão `http://localhost:8080`), com a configuração de
 [`orval.config.ts`](../../orval.config.ts): um arquivo por tag do contrato em
 `generated/endpoints/<tag>/` e os tipos em `generated/model/`, hooks do TanStack Query com
 `AbortSignal` e todas as chamadas passando pelo mutator `http`.
 
 Não é editado à mão: o Orval apaga a pasta e recria tudo a cada geração. Para trazer uma mudança do
-contrato do backend:
+contrato, com o backend no ar:
 
 ```bash
-npm run api:sync
+npm run api:generate
 ```
 
-Isso copia `../akari/src/main/resources/META-INF/openapi.yaml` e regenera o cliente. Depois,
-`npm run typecheck` aponta as telas que precisam acompanhar a mudança (operação renomeada, campo
-novo obrigatório etc.).
+Depois, `npm run typecheck` aponta as telas que precisam acompanhar a mudança (operação renomeada,
+campo novo obrigatório etc.). O cliente gerado fica commitado, então rodar e buildar o portal não
+precisa do backend.
 
 ## HTTP (`http.ts`)
 

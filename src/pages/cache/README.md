@@ -47,7 +47,7 @@ operação do backend. Se a página for fechada no meio, a operação para onde 
 
 ## Regras do backend que a tela respeita
 
-**Confirmado** (`openapi.yaml`, tag Cache, e `CacheQueueProcessorService` no backend):
+**Confirmado** (contrato, tag Cache, e `CacheQueueProcessorService` no backend):
 
 - Só linhas na fila ou baixando podem ser canceladas, e só arquivos concluídos podem ser deletados;
   uma linha com falha não pode ser removida (`400`) — só reenfileirada.
@@ -58,7 +58,7 @@ operação do backend. Se a página for fechada no meio, a operação para onde 
 
 - **Falhas não somem.** Uma linha com falha não pode ser removida nem é apagada pela eviction LRU,
   que só considera arquivos concluídos (`findCompletedOrderByFetchedAtAsc`): ela fica na fila até
-  alguém tentar de novo. **Confirmado** (`openapi.yaml`, `deleteCacheItem`). **Aceito** (confirmado
+  alguém tentar de novo. **Confirmado** (contrato, `deleteCacheItem`). **Aceito** (confirmado
   pelo mantenedor): a falha serve de lembrete até ser reenfileirada.
 - **Limite da listagem.** A tela mostra até 200 linhas pendentes e até 500 linhas no total, sem
   paginação. **Aceito** (confirmado pelo mantenedor): com o orçamento de cache atual, as listas

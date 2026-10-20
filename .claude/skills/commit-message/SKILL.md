@@ -105,8 +105,8 @@ funcionalidade costuma tocar a página e a feature da mesma área ao mesmo tempo
   `overrides`, `pairing`, `playback`. Mudança no cabeçalho ou nas abas como um todo é `item`.
 - Partes transversais: `layout` (sidebar, header, `components/layout`), `ui` (`components/ui`),
   `api` (`src/api/http.ts`, `sse.ts`, `query.ts`, `errors.ts`).
-- Use `contract` para sincronizar o `openapi.yaml` com o backend e regenerar o cliente do Orval
-  (`npm run api:sync`) — o commit leva junto `openapi.yaml` e `src/api/generated/`. Se a tela já
+- Use `contract` para regenerar o cliente do Orval a partir do contrato do backend
+  (`npm run api:generate`, com o backend no ar) — o commit leva `src/api/generated/`. Se a tela já
   passa a usar o contrato novo no mesmo commit, prefira o escopo da tela e cite a sincronização
   num bullet.
 - Mudanças em configuração de build/lint (`package.json`, `vite.config.ts`, `tailwind.config.ts`,
@@ -132,7 +132,7 @@ feat(cache): adiciona cancelar tudo e deletar tudo
 ```
 feat(catalog): adiciona filtros de curadoria na listagem
 
-- sincroniza o openapi.yaml e regenera o cliente com reviewStatus, hasAnilist, hasTmdb e allEpisodesPaired
+- regenera o cliente com reviewStatus, hasAnilist, hasTmdb e allEpisodesPaired
 - agrupa os filtros num painel retrátil com os ativos exibidos como chips
 ```
 

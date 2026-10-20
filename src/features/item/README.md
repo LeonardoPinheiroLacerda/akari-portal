@@ -33,7 +33,7 @@ para travar as abas que dependem de um vínculo anterior.
   ainda não há status). Usado na badge do cabeçalho do item e no filtro do catálogo.
 - `FRANCHISE_ROOT` — rótulo e explicação das três opções de início da franquia. O texto de
   "Automático" descreve a regra do backend: é início quem não tem relação `PREQUEL` nem `PARENT`.
-  **Confirmado** (`openapi.yaml`, schema `AnimeRootKind`).
+  **Confirmado** (contrato, schema `AnimeRootKind`).
 - `RELATION_LABEL` / `relationLabel` — nome em português de cada tipo de relação da AniList; um
   tipo desconhecido aparece com o valor cru.
 - `SEASON_LABEL` — estações do ano da AniList.

@@ -15,7 +15,7 @@ botão.
 - As preferências são agrupadas pelo prefixo da chave: Cache de vídeo (`cache.*`), Reprodução
   (`playback.*`), TMDB (`tmdb.*`), AniList (`anilist.*`) e Outras.
 - Só preferências que já existem no backend aparecem e podem ser alteradas — a API não cria chaves
-  novas. **Confirmado** (`openapi.yaml`, `updateSetting`: chave inexistente responde `404`).
+  novas. **Confirmado** (contrato, `updateSetting`: chave inexistente responde `404`).
 
 ## Editor de cada preferência
 

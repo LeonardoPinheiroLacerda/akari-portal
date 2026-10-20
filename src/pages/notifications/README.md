@@ -12,7 +12,7 @@ vindas da ingestão (resultado de cada ingestão e falhas de vínculo de cada pa
 ## Lista
 
 - Página a página, 20 por vez, da mais nova para a mais antiga, com o botão "Ver mais" — o formato
-  que o contrato prevê. **Confirmado** (`openapi.yaml`, `listNotifications`). Usa uma
+  que o contrato prevê. **Confirmado** (contrato, `listNotifications`). Usa uma
   `useInfiniteQuery` com a chave `NOTIFICATIONS_INFINITE_KEY`, que o provider de notificações
   atualiza quando chega uma nova pelo stream.
 - Agrupada em Hoje, Ontem e Anteriores, pelo dia local de criação.
@@ -35,7 +35,7 @@ vindas da ingestão (resultado de cada ingestão e falhas de vínculo de cada pa
 ## Observações
 
 - **Sem limpeza.** Não há como apagar notificações, nem pela tela nem pela API, e o backend não
-  expira as antigas — o histórico só cresce. **Confirmado** (`openapi.yaml`: só listagem, contagem
+  expira as antigas — o histórico só cresce. **Confirmado** (contrato: só listagem, contagem
   e marcar como lida). **Aceito** (confirmado pelo mantenedor): o volume é pequeno e o histórico
   completo é útil.
 - **Sem filtros.** A lista não filtra por nível nem por lidas/não lidas (a API também não oferece

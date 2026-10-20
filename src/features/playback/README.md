@@ -18,7 +18,7 @@ o TTL e o vencimento do heartbeat e um log de eventos que a aba mostra.
    da playlist e o instante em que o transcode começou (`startOffsetSeconds`).
 2. **Espera da playlist** — a playlist só existe depois que o transcode produz o primeiro
    segmento; até lá o backend responde `404`, o mesmo código de sessão inexistente ou expirada.
-   **Confirmado** (`openapi.yaml`, operação da playlist). O hook tenta de novo com espera crescente
+   **Confirmado** (contrato, operação da playlist). O hook tenta de novo com espera crescente
    (0,5 s até 3 s entre tentativas, 40 tentativas no máximo) e desiste com erro depois disso.
 3. **Player** — com a playlist pronta, carrega no hls.js (ou no HLS nativo do Safari). Segmentos
    ainda não gerados também respondem `404`; o hls.js é configurado para tentar de novo na borda
@@ -32,13 +32,13 @@ o TTL e o vencimento do heartbeat e um log de eventos que a aba mostra.
    - `switchTracks(faixas)` sempre reinicia o transcode na posição atual e recarrega o player.
 6. **Fim** — `reset()` para o heartbeat e o player e limpa o estado. Não existe operação para
    encerrar a sessão: o backend a descarta quando o heartbeat para e o TTL vence. **Confirmado**
-   (`openapi.yaml`: não há `DELETE` em `/v1/playback/sessions`).
+   (contrato: não há `DELETE` em `/v1/playback/sessions`).
 
 ## Regras do contrato que o hook respeita
 
 - Os índices de faixa (`audioTrackIndex`, `subtitleTrackIndex`) são a posição 0-based da faixa nos
   arrays `audio` e `subtitles` do probe de mídia, não o campo `index` de cada faixa. **Confirmado**
-  (`openapi.yaml`, schema do pedido de sessão).
+  (contrato, schema do pedido de sessão).
 - Se a legenda vai como faixa selecionável ou queimada no vídeo é decidido pelo backend, pelo
   formato da legenda; o portal não escolhe.
 - Os perfis de transcode são `WEB`, `TV` e `MOBILE` (tipo `Profile` no hook). O contrato declara o

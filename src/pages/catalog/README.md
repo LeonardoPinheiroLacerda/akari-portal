@@ -11,7 +11,7 @@ curadoria e ordenação. É a porta de entrada da curadoria — daqui se abre o 
 ## Lista
 
 - Vem de `GET /v1/catalog/folders`, 20 pastas por página. Todos os filtros combinam com E e são
-  aplicados no backend. **Confirmado** (`openapi.yaml`, `listFolders`).
+  aplicados no backend. **Confirmado** (contrato, `listFolders`).
 - Ordenação por nome (A–Z, Z–A) ou data de criação (recentes, antigas) — os dois campos que o
   backend aceita.
 - Cada linha mostra a capa e o título do anime vinculado (ou "Sem vínculo"), o provedor e o
@@ -36,7 +36,7 @@ curadoria e ordenação. É a porta de entrada da curadoria — daqui se abre o 
   compartilhada ou aberta de outra tela (ex.: "Pastas" na tela de Provedores abre
   `/catalogo?storageProviderId=<id>`).
 
-Regras dos filtros de curadoria, definidas pelo backend. **Confirmado** (`openapi.yaml`, descrição
+Regras dos filtros de curadoria, definidas pelo backend. **Confirmado** (contrato, descrição
 de `listFolders` e dos parâmetros):
 
 - Pasta sem anime vinculado só aparece com AniList "Sem vínculo"; combinada com TMDB, Episódios ou

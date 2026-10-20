@@ -12,8 +12,8 @@ o admin:
 - ajusta as preferências do sistema.
 
 O portal é só o cliente: as regras e os dados ficam no backend [`akari`](../akari) (Quarkus), e o
-contrato entre os dois é o [`openapi.yaml`](openapi.yaml), cópia do
-`src/main/resources/META-INF/openapi.yaml` do backend.
+contrato entre os dois é o OpenAPI do backend (`src/main/resources/META-INF/openapi.yaml` no
+`akari`), servido por ele em `/q/openapi`. Quando os READMEs citam o "contrato", é esse documento.
 
 ## Documentação
 
@@ -27,8 +27,8 @@ contrato entre os dois é o [`openapi.yaml`](openapi.yaml), cópia do
 
 - **React 19 + Vite + TypeScript**, com React Router para as rotas da SPA.
 - **TanStack Query** para o estado remoto, cache e invalidação.
-- **Orval**: cliente HTTP, tipos e hooks do TanStack Query gerados do `openapi.yaml`, em
-  `src/api/generated`.
+- **Orval**: cliente HTTP, tipos e hooks do TanStack Query gerados do contrato servido pelo backend
+  em `/q/openapi`, em `src/api/generated`.
 - **EventSource (SSE)** nativo para os streams `/v1/cache/events` e `/v1/notifications/events`.
 - **hls.js** no player da aba Reprodução.
 - **Tailwind CSS** com os tokens do design em variáveis CSS (tema escuro e claro), e componentes
@@ -63,17 +63,16 @@ no CORS (`CORS_ORIGINS` no backend; padrão `http://localhost:5173`). **Confirma
 
 ## Scripts
 
-| Script                            | O que faz                                                            |
-| --------------------------------- | -------------------------------------------------------------------- |
-| `npm run dev`                     | Servidor de desenvolvimento.                                         |
-| `npm run build`                   | Checagem de tipos e build de produção em `dist/`.                    |
-| `npm run preview`                 | Serve o build localmente.                                            |
-| `npm run typecheck`               | Só a checagem de tipos.                                              |
-| `npm run lint` / `lint:fix`       | ESLint.                                                              |
-| `npm run lint:oxlint`             | Oxlint.                                                              |
-| `npm run format` / `format:check` | Prettier.                                                            |
-| `npm run api:sync`                | Copia o `openapi.yaml` do backend (`../akari`) e regenera o cliente. |
-| `npm run api:generate`            | Só regenera o cliente a partir do `openapi.yaml` local.              |
+| Script                            | O que faz                                                                    |
+| --------------------------------- | ---------------------------------------------------------------------------- |
+| `npm run dev`                     | Servidor de desenvolvimento.                                                 |
+| `npm run build`                   | Checagem de tipos e build de produção em `dist/`.                            |
+| `npm run preview`                 | Serve o build localmente.                                                    |
+| `npm run typecheck`               | Só a checagem de tipos.                                                      |
+| `npm run lint` / `lint:fix`       | ESLint.                                                                      |
+| `npm run lint:oxlint`             | Oxlint.                                                                      |
+| `npm run format` / `format:check` | Prettier.                                                                    |
+| `npm run api:generate`            | Regenera o cliente a partir do `/q/openapi` do backend (precisa dele no ar). |
 
 ## Estrutura
 
@@ -107,8 +106,8 @@ src/
 
 Resumo abaixo; os detalhes e as decisões ficam em [`src/api/README.md`](src/api/README.md).
 
-- **Contrato e cliente gerado.** O `openapi.yaml` é a fonte dos tipos e hooks. Ao mudar o contrato
-  no backend, rode `npm run api:sync` e ajuste as telas ao que mudou. O cliente gerado não é
+- **Contrato e cliente gerado.** O contrato do backend é a fonte dos tipos e hooks. Ao mudar o
+  contrato, rode `npm run api:generate` com o backend no ar e ajuste as telas ao que mudou. O cliente gerado não é
   editado à mão: o Orval apaga e recria `src/api/generated` a cada geração.
 - **Streams SSE.** `/v1/cache/events` e `/v1/notifications/events` não estão no OpenAPI (são
   code-first no backend), então os tipos dos eventos ficam escritos à mão em

@@ -97,7 +97,8 @@ Antes de perguntar qualquer coisa, tente resolver via ferramenta:
   contexto com grep bruto.
 - **Quem usa o quê?** Siga os imports e as chamadas reais antes de supor um acoplamento.
 - **O contrato garante algo?** Leia o `openapi.yaml` (e o código do backend em `../akari`, quando
-  o contrato não for claro). Se o portal está defasado, `npm run api:sync` mostra a diferença.
+  o contrato não for claro). Se o portal está defasado, `npm run api:generate` com o backend no ar
+  mostra a diferença no cliente gerado.
 - **A tela se comporta assim?** Abra no preview (servidor de `.claude/launch.json`) numa aba
   própria e confira — sem salvar, deletar ou disparar ações com efeito em dados reais.
 

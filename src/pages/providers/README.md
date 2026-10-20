@@ -29,12 +29,12 @@ de arquivos. A lógica compartilhada (tipos, nome exibido, teste de conexão) fi
    respondeu. Sem conexão, oferece voltar ao formulário; o provedor já fica salvo mesmo assim.
 
 O tipo não muda depois do cadastro: a edição só troca a configuração. **Confirmado**
-(`openapi.yaml`, `updateStorageProviderConfig`: "`type` é imutável").
+(contrato, `updateStorageProviderConfig`: "`type` é imutável").
 
 ### Edição começa vazia
 
 A API nunca devolve a configuração de um provedor — `config` é omitido de propósito para não expor
-credenciais — e o `PUT` de configuração substitui o mapa inteiro. **Confirmado** (`openapi.yaml`,
+credenciais — e o `PUT` de configuração substitui o mapa inteiro. **Confirmado** (contrato,
 `StorageProviderResponse` e `updateStorageProviderConfig`). Por isso o formulário de edição abre
 vazio e todos os campos, inclusive e-mail e caminho, precisam ser digitados de novo. **Aceito**
 (confirmado pelo mantenedor): as credenciais nunca voltam do backend, e redigitar é o preço disso.

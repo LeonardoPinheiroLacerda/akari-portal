@@ -24,7 +24,7 @@ textos do card e os campos do formulário de cadastro — `email` e `password` p
 
 O contrato só traz o enum `StorageProviderType` (`MEGA`, `LOCAL`) e descreve em texto os campos de
 `config` de cada tipo; não há operação que liste os tipos e seus campos. **Confirmado**
-(`openapi.yaml`, schema `StorageProviderType`). Por isso o catálogo é escrito no portal, e um tipo
+(contrato, schema `StorageProviderType`). Por isso o catálogo é escrito no portal, e um tipo
 novo no backend exige uma entrada nova aqui — até lá, `providerTypeDef` devolve uma definição
 genérica para não quebrar a tela. **Backlog real** (confirmado pelo mantenedor, pela política geral
 de regras de negócio no cliente de [`ARQUITETURA_DO_SISTEMA.md`](../../../docs/ARQUITETURA_DO_SISTEMA.md#regras-arquiteturais)):
@@ -37,7 +37,7 @@ download".
 ### Nome do provedor
 
 `StorageProviderResponse` não tem nome — só `id`, `type` e `createdAt`. **Confirmado**
-(`openapi.yaml`). O portal mostra `<rótulo do tipo> #<id>`, como "MEGA #3" ou "Disco local #5".
+(contrato). O portal mostra `<rótulo do tipo> #<id>`, como "MEGA #3" ou "Disco local #5".
 **Aceito** (confirmado pelo mantenedor): tipo e id bastam para identificar o provedor.
 
 ## Teste de conexão (`health.ts`)
@@ -47,7 +47,7 @@ download".
   para o chip exibido ("Conectado", "Sem conexão", "Testando…", "Não testado").
 - A API responde `healthy: true/false`, sem motivo, e reserva o erro `502` para quando o próprio
   rclone está fora do ar — nesse caso o motivo exibido é a mensagem do erro. **Confirmado**
-  (`openapi.yaml`, operação `checkStorageProviderHealth`).
+  (contrato, operação `checkStorageProviderHealth`).
 - O backend não guarda o resultado do teste. O portal guarda o último resultado de cada provedor
   no navegador (`akari.providerHealth`) e o compartilha entre as telas com um store próprio
   (`useSyncExternalStore`). Um "Testando…" de uma sessão anterior é descartado ao recarregar.

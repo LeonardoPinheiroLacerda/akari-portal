@@ -51,7 +51,7 @@ sessão de reprodução em [`src/features/playback`](../../features/playback/REA
   convite para vincular.
 - A busca no TMDB escolhe entre série e filme, usa o idioma padrão das preferências como idioma
   inicial e pagina os resultados.
-- "Remover vínculo" apaga o vínculo; os overrides caem em cascata. **Confirmado** (`openapi.yaml`,
+- "Remover vínculo" apaga o vínculo; os overrides caem em cascata. **Confirmado** (contrato,
   `clearTmdbBinding`).
 
 ## Overrides (`OverridesTab`)
@@ -79,7 +79,7 @@ sessão de reprodução em [`src/features/playback`](../../features/playback/REA
   fora ou com Esc. Fechar descarta o rascunho não salvo.
 - Salvar grava o par com uma cópia dos dados do episódio (nome, sinopse, data, duração, nota,
   tipo); "Remover pareamento" apaga o par (`DELETE`), que é diferente de gravar campos `null`.
-  **Confirmado** (`openapi.yaml`, operações de `tmdb-pairing`).
+  **Confirmado** (contrato, operações de `tmdb-pairing`).
 - **Auto-pair por continuidade** abre a proposta de `autoPair`; "Aplicar" grava os pares marcados
   um por um. Se um falhar no meio, os anteriores ficam salvos e o aviso diz quantos.
 
@@ -95,7 +95,7 @@ sessão de reprodução em [`src/features/playback`](../../features/playback/REA
 - A aba indica se a legenda será selecionável ou queimada no vídeo pelo codec (SRT é selecionável),
   repetindo a regra que o backend aplica.
 - O estado do cache de um arquivo é achado listando até 500 linhas do cache e procurando o
-  arquivo, porque a listagem do cache não filtra por arquivo. **Confirmado** (`openapi.yaml`,
+  arquivo, porque a listagem do cache não filtra por arquivo. **Confirmado** (contrato,
   `listCaches`: só `page`, `size` e `pendingOnly`). Com mais de 500 linhas no cache, o estado pode
   sair errado. **Backlog real** (confirmado pelo mantenedor): o backend deveria filtrar a listagem
   do cache por arquivo.

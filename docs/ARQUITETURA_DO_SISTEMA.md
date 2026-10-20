@@ -11,9 +11,9 @@
 O portal é uma **SPA React** (Vite + TypeScript) que fala só com o backend `akari`. Não tem servidor
 próprio, banco nem regra de negócio de domínio — é um cliente:
 
-- **Contrato como fonte.** O `openapi.yaml` do backend é copiado para a raiz do portal e o Orval
-  gera dele o cliente HTTP, os tipos e os hooks do TanStack Query (`src/api/generated`). Mudou o
-  contrato → `npm run api:sync` → `npm run typecheck` aponta o que acompanhar.
+- **Contrato como fonte.** O Orval lê o contrato direto do backend (`/q/openapi`) e gera dele o
+  cliente HTTP, os tipos e os hooks do TanStack Query (`src/api/generated`). Mudou o contrato →
+  `npm run api:generate` com o backend no ar → `npm run typecheck` aponta o que acompanhar.
 - **Estado remoto no TanStack Query.** Não há store global de dados: cada tela usa os hooks
   gerados, e as mutações invalidam grupos de queries por prefixo de URL.
 - **Tempo real por SSE.** Dois streams do backend, fora do contrato: o da fila de cache (só na tela
@@ -91,8 +91,9 @@ lib  ◄── todas as camadas
 
 ## Dependências críticas
 
-- **Contrato do backend** (`openapi.yaml`) — toda tela depende dele; o portal fica defasado até rodar
-  `npm run api:sync`.
+- **Contrato do backend** (`/q/openapi`) — toda tela depende dele; o portal fica defasado até rodar
+  `npm run api:generate`, que só funciona com o backend no ar. O cliente gerado fica commitado, então
+  rodar e buildar o portal não precisa do backend.
 - **Streams SSE code-first** — tipos escritos à mão em `src/api/sse.ts`, espelhando os records Java.
   **Backlog real** (confirmado pelo mantenedor): o backend deveria publicar o esquema dos eventos.
 - **CDN do TMDB e da AniList** — imagens carregadas direto pelas URLs que a API devolve; a imagem
@@ -136,7 +137,7 @@ calculadas no cliente.
   entrada em `NAV` no `Sidebar` se for de navegação, e `usePageMeta` para o título.
 - **Lógica usada por mais de uma tela** vai para `src/features/<área>`; componente visual genérico,
   para `src/components/ui`.
-- **Mudança de contrato:** `npm run api:sync`, ajustar as telas, e invalidar o grupo certo depois
+- **Mudança de contrato:** `npm run api:generate` com o backend no ar, ajustar as telas, e invalidar o grupo certo depois
   das mutações novas.
 - **Regra de negócio nova:** pedir no backend em vez de calcular no portal; se precisar ficar no
   cliente por ora, registrar no README da área e em "Riscos técnicos".
