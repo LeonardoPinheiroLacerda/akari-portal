@@ -1,0 +1,9 @@
+# Gerado pelo Orval (npm run api:generate)
+src/api/generated
+
+dist
+node_modules
+package-lock.json
+openapi.yaml
+design
+.claude
