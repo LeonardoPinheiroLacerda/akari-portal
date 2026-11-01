@@ -68,19 +68,19 @@ precisa do backend.
 
 ## Streams SSE (`sse.ts`)
 
-Os streams `/v1/cache/events` e `/v1/notifications/events` não estão no OpenAPI (são code-first no
-backend), então os tipos ficam aqui, escritos à mão. **Confirmado**: `CacheEvent` e
-`NotificationEvent` batem campo a campo com os records Java de mesmo nome no backend
-(`domain/cache/sse/CacheEvent.java`, `domain/notification/sse/NotificationEvent.java`), e o nome
-de cada evento SSE é o `type` do evento (`CacheEventBroadcaster.java:126`). Quando o backend muda
-um evento, o tipo daqui precisa ser ajustado à mão. **Backlog real** (confirmado pelo mantenedor):
-o backend deveria publicar o esquema dos eventos para o portal gerar esses tipos, como faz com o
-resto do contrato.
+Os endpoints `/v1/cache/events` e `/v1/notifications/events` não estão em `paths` do contrato (o
+gerador do backend não modela SSE), mas o payload de cada um está: `CacheEvent`/`CacheEventType` e
+`NotificationEvent`/`NotificationEventType`, gerados pelo Orval em `generated/model`. O nome de
+cada evento SSE é o `type` do payload. **Confirmado** (contrato, schemas `CacheEventType` e
+`NotificationEventType`). As telas escutam `Object.values(CacheEventType)` e
+`Object.values(NotificationEventType)`, então um tipo de evento novo no contrato passa a ser
+escutado depois do `npm run api:generate`.
 
 `useEventSource(path, opções)` abre um `EventSource` e devolve `status` (`connecting`, `open`,
 `idle`, `error`), `lastEventAt` e `reconnect()`:
 
-- Escuta os nomes de evento passados em `events` e entrega o JSON parseado em `onMessage`.
+- Escuta os nomes de evento passados em `events` — tipados pelo `type` do payload, então só aceitam
+  valores do contrato — e entrega o JSON parseado em `onMessage`.
 - `onOpen` roda a cada (re)conexão — é onde a tela recarrega o estado pelo REST, porque nenhum dos
   streams tem replay do que foi perdido.
 - Em erro, reconecta com espera exponencial (2 s, 4 s… até 30 s).

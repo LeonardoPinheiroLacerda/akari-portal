@@ -109,10 +109,10 @@ Resumo abaixo; os detalhes e as decisões ficam em [`src/api/README.md`](src/api
 - **Contrato e cliente gerado.** O contrato do backend é a fonte dos tipos e hooks. Ao mudar o
   contrato, rode `npm run api:generate` com o backend no ar e ajuste as telas ao que mudou. O cliente gerado não é
   editado à mão: o Orval apaga e recria `src/api/generated` a cada geração.
-- **Streams SSE.** `/v1/cache/events` e `/v1/notifications/events` não estão no OpenAPI (são
-  code-first no backend), então os tipos dos eventos ficam escritos à mão em
-  [`src/api/sse.ts`](src/api/sse.ts). O stream do cache não tem replay nem heartbeat: a cada
-  (re)conexão o portal recarrega o estado pelo REST.
+- **Streams SSE.** `/v1/cache/events` e `/v1/notifications/events` não estão em `paths` do
+  contrato, mas o payload de cada um está (`CacheEvent`, `NotificationEvent`), então os tipos dos
+  eventos vêm do cliente gerado; [`src/api/sse.ts`](src/api/sse.ts) só abre o stream. O stream
+  do cache não tem replay nem heartbeat: a cada (re)conexão o portal recarrega o estado pelo REST.
 - **Invalidação.** As chaves do React Query geradas pelo Orval começam pela URL; depois de cada
   mutação o portal invalida por prefixo de URL, nos grupos de [`src/api/query.ts`](src/api/query.ts).
 - **Erros.** Todo erro da API chega como `HttpError` com o corpo `ApiError` do backend

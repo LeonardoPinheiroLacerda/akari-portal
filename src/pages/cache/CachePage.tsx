@@ -10,10 +10,10 @@ import {
   useQueueCacheDownload,
 } from '@/api/generated/endpoints/cache/cache'
 import { useGetFolder } from '@/api/generated/endpoints/media-folder/media-folder'
-import type { CacheItem, CacheStatus } from '@/api/generated/model'
+import { CacheEventType, type CacheEvent, type CacheItem, type CacheStatus } from '@/api/generated/model'
 import { errorStatus, toastError } from '@/api/errors'
 import { invalidate } from '@/api/query'
-import { useEventSource, type CacheEvent } from '@/api/sse'
+import { useEventSource } from '@/api/sse'
 import { usePageMeta } from '@/components/layout/PageMeta'
 import { Button } from '@/components/ui/button'
 import { Chip, type Tone } from '@/components/ui/chip'
@@ -107,7 +107,7 @@ export function CachePage() {
 
   // Sem replay nem heartbeat no stream: a cada (re)conexão reconcilia pelo REST.
   const sse = useEventSource<CacheEvent>('/v1/cache/events', {
-    events: ['SNAPSHOT', 'IDLE', 'QUEUED', 'STARTED', 'PROGRESS', 'COMPLETED', 'FAILED', 'EVICTED', 'CANCELLED', 'DELETED'],
+    events: Object.values(CacheEventType),
     onMessage,
     onOpen: () => invalidate.cache(),
     closeOn: (e) => e.type === 'IDLE',

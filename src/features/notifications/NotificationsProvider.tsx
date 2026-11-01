@@ -1,9 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { InfiniteData } from '@tanstack/react-query'
 import { getGetUnreadCountQueryKey, useGetUnreadCount } from '@/api/generated/endpoints/notification/notification'
-import type { NotificationPage, NotificationResponse, UnreadCountResponse } from '@/api/generated/model'
+import {
+  NotificationEventType,
+  type NotificationEvent,
+  type NotificationPage,
+  type NotificationResponse,
+  type UnreadCountResponse,
+} from '@/api/generated/model'
 import { invalidatePrefixes, queryClient } from '@/api/query'
-import { useEventSource, type NotificationEvent, type SseStatus } from '@/api/sse'
+import { useEventSource, type SseStatus } from '@/api/sse'
 
 export const NOTIFICATIONS_INFINITE_KEY = ['/v1/notifications', 'infinite'] as const
 
@@ -62,7 +68,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   }, [])
 
   const { status } = useEventSource<NotificationEvent>('/v1/notifications/events', {
-    events: ['NEW'],
+    events: Object.values(NotificationEventType),
     onMessage,
     // Sem replay no reconnect: reconcilia pelo REST.
     onOpen: () => invalidatePrefixes('/v1/notifications'),

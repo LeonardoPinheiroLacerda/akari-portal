@@ -1,43 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import type { CacheItem, CacheStatus, NotificationResponse } from './generated/model'
 import { apiUrl } from './http'
-
-/*
- * Os dois streams SSE são code-first no backend e não existem no OpenAPI:
- * os tipos abaixo espelham os records Java `CacheEvent` e `NotificationEvent`.
- */
-
-export type CacheEventType =
-  'SNAPSHOT' | 'IDLE' | 'QUEUED' | 'STARTED' | 'PROGRESS' | 'COMPLETED' | 'FAILED' | 'EVICTED' | 'CANCELLED' | 'DELETED'
-
-export type CacheEvent = {
-  type: CacheEventType
-  /** Id da linha de cache (não é o `fileId`). */
-  id: string | null
-  status: CacheStatus | null
-  errorMessage: string | null
-  bytes: number | null
-  totalBytes: number | null
-  /** bytes/segundo */
-  speed: number | null
-  /** segundos restantes */
-  eta: number | null
-  percentage: number | null
-  items: CacheItem[] | null
-}
-
-export type NotificationEventType = 'NEW'
-
-export type NotificationEvent = {
-  type: NotificationEventType
-  notification: NotificationResponse
-}
 
 export type SseStatus = 'connecting' | 'open' | 'idle' | 'error'
 
-type Options<T> = {
-  /** Nomes de evento (o backend usa `event.type` como nome do evento SSE). */
-  events: readonly string[]
+/*
+ * Os payloads dos streams vêm do contrato (`CacheEvent`, `NotificationEvent` em
+ * `generated/model`); o nome de cada evento SSE é o `type` do payload.
+ */
+type Options<T extends { type: string }> = {
+  /** Nomes de evento a escutar — os valores do `type` do payload (ex.: `Object.values(CacheEventType)`). */
+  events: readonly T['type'][]
   onMessage: (data: T) => void
   /** Chamado a cada (re)conexão aberta — use para reconciliar via REST. */
   onOpen?: () => void
@@ -51,7 +23,7 @@ type Options<T> = {
 }
 
 /** EventSource com reconexão exponencial. */
-export function useEventSource<T>(
+export function useEventSource<T extends { type: string }>(
   path: string,
   { events, onMessage, onOpen, enabled = true, closeOn, idleRetryMs = 15_000 }: Options<T>,
 ) {

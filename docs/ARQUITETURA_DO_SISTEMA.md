@@ -16,8 +16,9 @@ próprio, banco nem regra de negócio de domínio — é um cliente:
   `npm run api:generate` com o backend no ar → `npm run typecheck` aponta o que acompanhar.
 - **Estado remoto no TanStack Query.** Não há store global de dados: cada tela usa os hooks
   gerados, e as mutações invalidam grupos de queries por prefixo de URL.
-- **Tempo real por SSE.** Dois streams do backend, fora do contrato: o da fila de cache (só na tela
-  de Cache) e o de notificações (aberto o tempo todo, num provider na raiz do app).
+- **Tempo real por SSE.** Dois streams do backend, com o payload no contrato (os endpoints em si
+  não estão em `paths`): o da fila de cache (só na tela de Cache) e o de notificações (aberto o
+  tempo todo, num provider na raiz do app).
 - **Reprodução por HLS.** A aba Reprodução cria uma sessão de transcode no backend e toca a
   playlist com hls.js.
 
@@ -94,8 +95,6 @@ lib  ◄── todas as camadas
 - **Contrato do backend** (`/q/openapi`) — toda tela depende dele; o portal fica defasado até rodar
   `npm run api:generate`, que só funciona com o backend no ar. O cliente gerado fica commitado, então
   rodar e buildar o portal não precisa do backend.
-- **Streams SSE code-first** — tipos escritos à mão em `src/api/sse.ts`, espelhando os records Java.
-  **Backlog real** (confirmado pelo mantenedor): o backend deveria publicar o esquema dos eventos.
 - **CDN do TMDB e da AniList** — imagens carregadas direto pelas URLs que a API devolve; a imagem
   em tamanho original depende do formato da URL do TMDB (**Backlog real**: a API deveria entregar
   essa URL).
