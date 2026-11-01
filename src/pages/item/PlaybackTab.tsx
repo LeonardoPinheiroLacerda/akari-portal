@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 import { useListCaches, useQueueCacheDownload } from '@/api/generated/endpoints/cache/cache'
 import { useGetMediaProbe } from '@/api/generated/endpoints/media-probe/media-probe'
 import { useListVideoFiles } from '@/api/generated/endpoints/video-file/video-file'
-import type { MediaInfoResponse, SubtitleTrack } from '@/api/generated/model'
+import { TranscodeProfile, type MediaInfoResponse, type SubtitleTrack } from '@/api/generated/model'
 import { errorStatus, toastError } from '@/api/errors'
 import { invalidate } from '@/api/query'
 import { Button } from '@/components/ui/button'
@@ -15,18 +15,19 @@ import { Segmented } from '@/components/ui/segmented'
 import { Select } from '@/components/ui/select'
 import { EmptyState, ErrorState, Loading } from '@/components/ui/states'
 import type { ItemState } from '@/features/item/useItem'
-import { usePlaybackSession, type Profile } from '@/features/playback/usePlaybackSession'
+import { usePlaybackSession } from '@/features/playback/usePlaybackSession'
 import { providerName, usesCache } from '@/features/providers/types'
 import { useProviders } from '@/features/providers/useProviders'
 import { byName } from '@/features/item/autoPair'
 import { episodeCode, formatBitrate, formatBytes, formatClock, formatTime, parseClock } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
-const PROFILES: { value: Profile; hint: string }[] = [
-  { value: 'WEB', hint: 'Navegador (hls.js)' },
-  { value: 'TV', hint: 'TV / set-top box' },
-  { value: 'MOBILE', hint: 'Dispositivo móvel' },
-]
+const PROFILE_HINT: Record<TranscodeProfile, string> = {
+  WEB: 'Navegador (hls.js)',
+  TV: 'TV / set-top box',
+  MOBILE: 'Dispositivo móvel',
+  GOOGLE_TV_STREAMER: 'Google TV Streamer (pode sair em HEVC, que nem todo navegador toca)',
+}
 
 const isSoft = (codec?: string | null) => codec === 'subrip' || codec === 'srt'
 const subLabel = (s: SubtitleTrack) => s.title ?? s.language ?? s.codec ?? 'Legenda'
@@ -167,7 +168,7 @@ function Player({ fileId, fileName, probe }: { fileId: number; fileName: string;
     0,
     probe.audio.findIndex((a) => a.defaultTrack),
   )
-  const [profile, setProfile] = useState<Profile>('WEB')
+  const [profile, setProfile] = useState<TranscodeProfile>('WEB')
   const [audio, setAudio] = useState(String(defaultAudio))
   const [sub, setSub] = useState('')
   const [seekVal, setSeekVal] = useState('00:00')
@@ -237,11 +238,11 @@ function Player({ fileId, fileName, probe }: { fileId: number; fileName: string;
                 aria-label="Perfil de transcode"
                 value={profile}
                 onChange={setProfile}
-                options={PROFILES.map((p) => ({
-                  value: p.value,
+                options={Object.values(TranscodeProfile).map((p) => ({
+                  value: p,
                   label: (
-                    <span className="font-mono" title={p.hint}>
-                      {p.value}
+                    <span className="font-mono" title={PROFILE_HINT[p]}>
+                      {p}
                     </span>
                   ),
                 }))}

@@ -35,6 +35,9 @@
  * - `INTEGRATION_NOT_CONFIGURED` (503): uma preferência obrigatória está sem valor —
  *   o admin precisa configurá-la em
  *   `PUT /v1/settings/{key}`.
+ * - `TRANSCODE_FAILED` (500): o transcode de uma sessão de playback saiu com erro antes de
+ *   gerar a playlist (ou depois de já ter gerado) e não vai se recuperar — o cliente deve parar
+ *   de tentar e mostrar erro, diferente do `RESOURCE_NOT_FOUND` de "ainda não gerada".
  * - `INTERNAL_ERROR` (500): erro inesperado no servidor.
  */
 export type ApiErrorCode = typeof ApiErrorCode[keyof typeof ApiErrorCode];
@@ -47,5 +50,6 @@ export const ApiErrorCode = {
   REQUEST_ERROR: 'REQUEST_ERROR',
   INTEGRATION_ERROR: 'INTEGRATION_ERROR',
   INTEGRATION_NOT_CONFIGURED: 'INTEGRATION_NOT_CONFIGURED',
+  TRANSCODE_FAILED: 'TRANSCODE_FAILED',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
 } as const;

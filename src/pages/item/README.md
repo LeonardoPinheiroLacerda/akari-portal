@@ -90,8 +90,8 @@ sessão de reprodução em [`src/features/playback`](../../features/playback/REA
   quando o arquivo está fora do cache ou falhou. Enquanto o arquivo está na fila ou baixando, a aba
   recarrega o estado a cada 5 s.
 - Com o arquivo disponível, lê o probe de mídia (faixas de áudio e legenda) e libera o player:
-  perfil (`WEB`, `TV`, `MOBILE`), faixa de áudio, legenda, "Ir para" uma posição (`mm:ss`) e troca
-  de faixas durante a reprodução.
+  perfil (os valores do enum `TranscodeProfile`), faixa de áudio, legenda, "Ir para" uma posição
+  (`mm:ss`) e troca de faixas durante a reprodução.
 - A aba indica se a legenda será selecionável ou queimada no vídeo pelo codec (SRT é selecionável),
   repetindo a regra que o backend aplica.
 - O estado do cache de um arquivo é achado listando até 500 linhas do cache e procurando o

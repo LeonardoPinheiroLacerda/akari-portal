@@ -74,6 +74,11 @@ export interface AnimeResponse {
      */
   season?: string | null;
   /**
+     * Estúdio principal responsável pela produção, segundo a AniList
+     * @nullable
+     */
+  studio?: string | null;
+  /**
      * Nota média em escala 0–10
      * @nullable
      */

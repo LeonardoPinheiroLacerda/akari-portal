@@ -49,6 +49,11 @@ export interface VideoTrack {
      */
   displayAspectRatio?: string | null;
   /**
+     * Proporção de aspecto da amostra/pixel (ex.: `1:1` pixel quadrado, `4:3` anamórfico). Diferente de `1:1` indica vídeo anamórfico — `width`x`height` não reflete a proporção de exibição, só `displayAspectRatio` reflete
+     * @nullable
+     */
+  sampleAspectRatio?: string | null;
+  /**
      * Quadros por segundo, calculado do `avg_frame_rate` do ffprobe (ex.: `23.976`)
      * @nullable
      */

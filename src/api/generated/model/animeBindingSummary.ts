@@ -51,6 +51,11 @@ export interface AnimeBindingSummary {
      */
   format?: string | null;
   /**
+     * Estúdio principal responsável pela produção, segundo a AniList
+     * @nullable
+     */
+  studio?: string | null;
+  /**
      * `true` se o anime também tem binding TMDB
      * @nullable
      */

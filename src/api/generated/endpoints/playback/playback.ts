@@ -39,6 +39,7 @@ import type {
 
 import type {
   BadRequestResponse,
+  FileAvailabilityOkResponse,
   HeartbeatOkResponse,
   InternalServerErrorResponse,
   MediaFileOkResponse,
@@ -49,7 +50,8 @@ import type {
   SessionCreatedResponse,
   SessionOkResponse,
   StartPlaybackSessionRequestBodyBody,
-  SwitchTracksRequestBodyBody
+  SwitchTracksRequestBodyBody,
+  TranscodeFailedResponse
 } from '../../model';
 
 import { http } from '../../../http';
@@ -74,6 +76,119 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
+export const getGetFileAvailabilityUrl = (fileId: number,) => {
+
+
+
+
+  return `/v1/playback/files/${fileId}/availability`
+}
+
+/**
+ * Consulta, sem efeito colateral (não enfileira nada no cache), o que falta antes de
+ * iniciar uma sessão de playback pra este arquivo:
+ * - `READY`: já pode chamar `POST /v1/playback/sessions` — provider `LOCAL`, ou remoto
+ *   com o cache `COMPLETED`.
+ * - `NEEDS_DOWNLOAD`: provider remoto sem linha de cache, ou com a linha `FAILED`. O
+ *   cliente enfileira com `POST /v1/cache/items`.
+ * - `DOWNLOADING`: provider remoto com linha `QUEUED` ou `DOWNLOADING`. Não enfileire de
+ *   novo — só acompanhe pelo SSE de `/v1/cache/events` até chegar `COMPLETED`.
+ *
+ * Não traz progresso nem percentual — isso é papel exclusivo do SSE. `cacheItemId` vem
+ * preenchido sempre que já existe uma linha de cache (em qualquer status), pra o cliente
+ * correlacionar os eventos do SSE a este arquivo; `null` para provider `LOCAL` ou quando
+ * ainda não há linha.
+ * @summary Diz se o arquivo já pode tocar ou precisa ser baixado pro cache antes
+ */
+export const getFileAvailability = async (fileId: number, options?: Parameters<typeof http>[1]): Promise<FileAvailabilityOkResponse> => {
+
+  return http<FileAvailabilityOkResponse>(getGetFileAvailabilityUrl(fileId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFileAvailabilityQueryKey = (fileId: number,) => {
+    return [
+    `/v1/playback/files/${fileId}/availability`
+    ] as const;
+    }
+
+
+export const getGetFileAvailabilityQueryOptions = <TData = Awaited<ReturnType<typeof getFileAvailability>>, TError = NotFoundResponse | InternalServerErrorResponse>(fileId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFileAvailability>>, TError, TData>>, request?: SecondParameter<typeof http>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFileAvailabilityQueryKey(fileId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFileAvailability>>> = ({ signal }) => getFileAvailability(fileId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: fileId !== null && fileId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFileAvailability>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFileAvailabilityQueryResult = NonNullable<Awaited<ReturnType<typeof getFileAvailability>>>
+export type GetFileAvailabilityQueryError = NotFoundResponse | InternalServerErrorResponse
+
+
+export function useGetFileAvailability<TData = Awaited<ReturnType<typeof getFileAvailability>>, TError = NotFoundResponse | InternalServerErrorResponse>(
+ fileId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFileAvailability>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFileAvailability>>,
+          TError,
+          Awaited<ReturnType<typeof getFileAvailability>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFileAvailability<TData = Awaited<ReturnType<typeof getFileAvailability>>, TError = NotFoundResponse | InternalServerErrorResponse>(
+ fileId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFileAvailability>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFileAvailability>>,
+          TError,
+          Awaited<ReturnType<typeof getFileAvailability>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFileAvailability<TData = Awaited<ReturnType<typeof getFileAvailability>>, TError = NotFoundResponse | InternalServerErrorResponse>(
+ fileId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFileAvailability>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Diz se o arquivo já pode tocar ou precisa ser baixado pro cache antes
+ */
+
+export function useGetFileAvailability<TData = Awaited<ReturnType<typeof getFileAvailability>>, TError = NotFoundResponse | InternalServerErrorResponse>(
+ fileId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFileAvailability>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFileAvailabilityQueryOptions(fileId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 export const getStartPlaybackSessionUrl = () => {
 
 
@@ -88,6 +203,9 @@ export const getStartPlaybackSessionUrl = () => {
  * (UUID) que identifica a sessão, junto do endereço da playlist `m3u8`.
  *
  * Responde `404` se o vídeo é de provider remoto e ainda não terminou de baixar no cache.
+ * Responde `500` com `TRANSCODE_FAILED` se o `ffmpeg` sair com erro logo depois de subir,
+ * antes de confirmar que o transcode começou — nesse caso a sessão não é criada. Terminar
+ * com sucesso logo depois de subir (remux curto) não é falha.
  * @summary Inicia uma sessão de transcode
  */
 export const startPlaybackSession = async (startPlaybackSessionRequestBodyBody: StartPlaybackSessionRequestBodyBody, options?: Parameters<typeof http>[1]): Promise<SessionCreatedResponse> => {
@@ -121,7 +239,7 @@ return http<SessionCreatedResponse>(getStartPlaybackSessionUrl(),
 
 export const getStartPlaybackSessionMutationKey = () => ['startPlaybackSession'] as const;
 
-export const getStartPlaybackSessionMutationOptions = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse,
+export const getStartPlaybackSessionMutationOptions = <TError = BadRequestResponse | NotFoundResponse | TranscodeFailedResponse | ServiceUnavailableResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startPlaybackSession>>, TError,StartPlaybackSessionMutationVariables, TContext>, request?: SecondParameter<typeof http>}
 ): UseMutationOptions<Awaited<ReturnType<typeof startPlaybackSession>>, TError,StartPlaybackSessionMutationVariables, TContext> => {
 
@@ -150,13 +268,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type StartPlaybackSessionMutationResult = NonNullable<Awaited<ReturnType<typeof startPlaybackSession>>>
     export type StartPlaybackSessionMutationBody = StartPlaybackSessionRequestBodyBody
-    export type StartPlaybackSessionMutationError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse
+    export type StartPlaybackSessionMutationError = BadRequestResponse | NotFoundResponse | TranscodeFailedResponse | ServiceUnavailableResponse
     export type StartPlaybackSessionMutationVariables = {data: StartPlaybackSessionRequestBodyBody}
 
     /**
  * @summary Inicia uma sessão de transcode
  */
-export const useStartPlaybackSession = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse,
+export const useStartPlaybackSession = <TError = BadRequestResponse | NotFoundResponse | TranscodeFailedResponse | ServiceUnavailableResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startPlaybackSession>>, TError,StartPlaybackSessionMutationVariables, TContext>, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof startPlaybackSession>>,
@@ -176,8 +294,10 @@ export const useStartPlaybackSession = <TError = BadRequestResponse | NotFoundRe
 
 /**
  * Reposiciona o transcode de uma sessão já iniciada para o instante informado. A playlist
- * `m3u8` passa a refletir a nova posição. Responde `404` se a sessão não existe ou já
- * expirou.
+ * `m3u8` passa a refletir a nova posição, a partir do `startOffsetSeconds` devolvido (que,
+ * com o vídeo copiado sem recodificar, é um keyframe em ou antes da posição pedida). Responde
+ * `404` se a sessão não existe ou já expirou. Responde `500` com `TRANSCODE_FAILED` se o
+ * reinício do `ffmpeg` falhar logo depois de subir.
  * @summary Reposiciona o transcode de uma sessão
  */
 export const seekPlaybackSession = async (sessionId: string,
@@ -212,7 +332,7 @@ return http<SessionOkResponse>(getSeekPlaybackSessionUrl(sessionId),
 
 export const getSeekPlaybackSessionMutationKey = () => ['seekPlaybackSession'] as const;
 
-export const getSeekPlaybackSessionMutationOptions = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse,
+export const getSeekPlaybackSessionMutationOptions = <TError = BadRequestResponse | NotFoundResponse | TranscodeFailedResponse | ServiceUnavailableResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof seekPlaybackSession>>, TError,SeekPlaybackSessionMutationVariables, TContext>, request?: SecondParameter<typeof http>}
 ): UseMutationOptions<Awaited<ReturnType<typeof seekPlaybackSession>>, TError,SeekPlaybackSessionMutationVariables, TContext> => {
 
@@ -241,13 +361,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type SeekPlaybackSessionMutationResult = NonNullable<Awaited<ReturnType<typeof seekPlaybackSession>>>
     export type SeekPlaybackSessionMutationBody = SeekRequestBodyBody
-    export type SeekPlaybackSessionMutationError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse
+    export type SeekPlaybackSessionMutationError = BadRequestResponse | NotFoundResponse | TranscodeFailedResponse | ServiceUnavailableResponse
     export type SeekPlaybackSessionMutationVariables = {sessionId: string;data: SeekRequestBodyBody}
 
     /**
  * @summary Reposiciona o transcode de uma sessão
  */
-export const useSeekPlaybackSession = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse,
+export const useSeekPlaybackSession = <TError = BadRequestResponse | NotFoundResponse | TranscodeFailedResponse | ServiceUnavailableResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof seekPlaybackSession>>, TError,SeekPlaybackSessionMutationVariables, TContext>, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof seekPlaybackSession>>,
@@ -270,7 +390,8 @@ export const useSeekPlaybackSession = <TError = BadRequestResponse | NotFoundRes
  * reiniciando o transcode a partir do instante informado. Ao contrário do `seek`, esta
  * operação sempre reinicia o processo de transcode — não há posição que evite o
  * reinício, já que trocar `-map`/filtro de legenda exige um novo processo `ffmpeg`.
- * Responde `404` se a sessão não existe ou já expirou.
+ * Responde `404` se a sessão não existe ou já expirou. Responde `500` com
+ * `TRANSCODE_FAILED` se o reinício do `ffmpeg` falhar logo depois de subir.
  * @summary Troca as faixas de áudio/legenda de uma sessão
  */
 export const switchPlaybackSessionTracks = async (sessionId: string,
@@ -305,7 +426,7 @@ return http<SessionOkResponse>(getSwitchPlaybackSessionTracksUrl(sessionId),
 
 export const getSwitchPlaybackSessionTracksMutationKey = () => ['switchPlaybackSessionTracks'] as const;
 
-export const getSwitchPlaybackSessionTracksMutationOptions = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse,
+export const getSwitchPlaybackSessionTracksMutationOptions = <TError = BadRequestResponse | NotFoundResponse | TranscodeFailedResponse | ServiceUnavailableResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof switchPlaybackSessionTracks>>, TError,SwitchPlaybackSessionTracksMutationVariables, TContext>, request?: SecondParameter<typeof http>}
 ): UseMutationOptions<Awaited<ReturnType<typeof switchPlaybackSessionTracks>>, TError,SwitchPlaybackSessionTracksMutationVariables, TContext> => {
 
@@ -334,13 +455,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type SwitchPlaybackSessionTracksMutationResult = NonNullable<Awaited<ReturnType<typeof switchPlaybackSessionTracks>>>
     export type SwitchPlaybackSessionTracksMutationBody = SwitchTracksRequestBodyBody
-    export type SwitchPlaybackSessionTracksMutationError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse
+    export type SwitchPlaybackSessionTracksMutationError = BadRequestResponse | NotFoundResponse | TranscodeFailedResponse | ServiceUnavailableResponse
     export type SwitchPlaybackSessionTracksMutationVariables = {sessionId: string;data: SwitchTracksRequestBodyBody}
 
     /**
  * @summary Troca as faixas de áudio/legenda de uma sessão
  */
-export const useSwitchPlaybackSessionTracks = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse,
+export const useSwitchPlaybackSessionTracks = <TError = BadRequestResponse | NotFoundResponse | TranscodeFailedResponse | ServiceUnavailableResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof switchPlaybackSessionTracks>>, TError,SwitchPlaybackSessionTracksMutationVariables, TContext>, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof switchPlaybackSessionTracks>>,
@@ -363,7 +484,11 @@ export const useSwitchPlaybackSessionTracks = <TError = BadRequestResponse | Not
  * transcode produz um master playlist (ABR com várias resoluções, ou legenda soft), é ele que
  * é devolvido — e ele referencia os variant playlists `stream_N.m3u8`. Caso contrário,
  * devolve a media playlist da rendition única. Responde `404` se a sessão não existe,
- * expirou ou ainda não produziu playlist.
+ * expirou ou ainda não produziu playlist (incluindo um master playlist que ainda não lista
+ * nenhuma variante) — nesse caso o cliente deve continuar tentando.
+ * Responde `500` com `TRANSCODE_FAILED` se o `ffmpeg` já saiu com erro e essa playlist
+ * nunca vai ser gerada — nesse caso o cliente deve parar de tentar e mostrar erro. Uma
+ * sessão cujo `ffmpeg` já concluiu com sucesso continua servindo a playlist normalmente.
  *
  * O header `X-Playback-Heartbeat-Ttl-Seconds` informa, em segundos, o TTL do heartbeat que o
  * cliente deve respeitar — é o mesmo prazo devolvido no corpo do endpoint de heartbeat. O
@@ -396,7 +521,7 @@ export const getGetPlaybackPlaylistQueryKey = (sessionId: string,) => {
     }
 
 
-export const getGetPlaybackPlaylistQueryOptions = <TData = Awaited<ReturnType<typeof getPlaybackPlaylist>>, TError = NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>(sessionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlaybackPlaylist>>, TError, TData>>, request?: SecondParameter<typeof http>}
+export const getGetPlaybackPlaylistQueryOptions = <TData = Awaited<ReturnType<typeof getPlaybackPlaylist>>, TError = NotFoundResponse | TranscodeFailedResponse | ServiceUnavailableResponse>(sessionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlaybackPlaylist>>, TError, TData>>, request?: SecondParameter<typeof http>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -415,10 +540,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetPlaybackPlaylistQueryResult = NonNullable<Awaited<ReturnType<typeof getPlaybackPlaylist>>>
-export type GetPlaybackPlaylistQueryError = NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse
+export type GetPlaybackPlaylistQueryError = NotFoundResponse | TranscodeFailedResponse | ServiceUnavailableResponse
 
 
-export function useGetPlaybackPlaylist<TData = Awaited<ReturnType<typeof getPlaybackPlaylist>>, TError = NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>(
+export function useGetPlaybackPlaylist<TData = Awaited<ReturnType<typeof getPlaybackPlaylist>>, TError = NotFoundResponse | TranscodeFailedResponse | ServiceUnavailableResponse>(
  sessionId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlaybackPlaylist>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getPlaybackPlaylist>>,
@@ -428,7 +553,7 @@ export function useGetPlaybackPlaylist<TData = Awaited<ReturnType<typeof getPlay
       >, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetPlaybackPlaylist<TData = Awaited<ReturnType<typeof getPlaybackPlaylist>>, TError = NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>(
+export function useGetPlaybackPlaylist<TData = Awaited<ReturnType<typeof getPlaybackPlaylist>>, TError = NotFoundResponse | TranscodeFailedResponse | ServiceUnavailableResponse>(
  sessionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlaybackPlaylist>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getPlaybackPlaylist>>,
@@ -438,7 +563,7 @@ export function useGetPlaybackPlaylist<TData = Awaited<ReturnType<typeof getPlay
       >, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetPlaybackPlaylist<TData = Awaited<ReturnType<typeof getPlaybackPlaylist>>, TError = NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>(
+export function useGetPlaybackPlaylist<TData = Awaited<ReturnType<typeof getPlaybackPlaylist>>, TError = NotFoundResponse | TranscodeFailedResponse | ServiceUnavailableResponse>(
  sessionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlaybackPlaylist>>, TError, TData>>, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -446,7 +571,7 @@ export function useGetPlaybackPlaylist<TData = Awaited<ReturnType<typeof getPlay
  * @summary Serve a playlist HLS da sessão
  */
 
-export function useGetPlaybackPlaylist<TData = Awaited<ReturnType<typeof getPlaybackPlaylist>>, TError = NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse>(
+export function useGetPlaybackPlaylist<TData = Awaited<ReturnType<typeof getPlaybackPlaylist>>, TError = NotFoundResponse | TranscodeFailedResponse | ServiceUnavailableResponse>(
  sessionId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPlaybackPlaylist>>, TError, TData>>, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {

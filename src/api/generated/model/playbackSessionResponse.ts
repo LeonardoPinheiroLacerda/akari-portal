@@ -34,7 +34,11 @@ export interface PlaybackSessionResponse {
      * Posição de mídia, em segundos, que corresponde ao início da playlist (`currentTime 0`). O
      * cliente mapeia a posição local com base nela (`currentTime = alvo - startOffsetSeconds`) e
      * recarrega a source quando ela muda entre chamadas de seek (indicando que o transcode
-     * reiniciou num novo offset). `0` no início da mídia.
+     * reiniciou num novo offset). `0` no início da mídia. Quando o reinício (seek ou troca de
+     * faixas) copia o vídeo sem recodificar, o transcode só consegue começar num keyframe:
+     * o valor é o instante desse keyframe, em ou antes da posição pedida (podendo ficar até
+     * um GOP, alguns segundos, antes), e não a própria posição. Recodificando, é a posição
+     * pedida.
      * @minimum 0
      */
   startOffsetSeconds: number;

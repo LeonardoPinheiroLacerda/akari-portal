@@ -19,6 +19,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { AudioTrack } from './audioTrack';
+import type { Chapter } from './chapter';
 import type { MediaContainer } from './mediaContainer';
 import type { SubtitleTrack } from './subtitleTrack';
 import type { VideoTrack } from './videoTrack';
@@ -31,4 +32,6 @@ export interface MediaInfoResponse {
   video: VideoTrack[];
   audio: AudioTrack[];
   subtitles: SubtitleTrack[];
+  /** Capítulos do arquivo, na ordem do arquivo; lista vazia se não houver */
+  chapters: Chapter[];
 }

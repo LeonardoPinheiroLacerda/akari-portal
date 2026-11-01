@@ -76,4 +76,9 @@ export interface AnilistMediaSummary {
   isAdult?: boolean | null;
   /** Nomes de gêneros */
   genres?: string[];
+  /**
+     * Estúdio principal responsável pela produção, segundo a AniList
+     * @nullable
+     */
+  studio?: string | null;
 }

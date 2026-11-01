@@ -19,17 +19,14 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { FileId } from './fileId';
+import type { TranscodeProfile } from './transcodeProfile';
 
 /**
  * Parâmetros para iniciar uma sessão de transcode
  */
 export interface StartPlaybackSessionRequest {
   fileId: FileId;
-  /**
-     * Profile de transcode escolhido pelo cliente. Os valores válidos são os profiles de
-     * transcode suportados pelo backend; um valor desconhecido é rejeitado com `400`.
-     */
-  profile: string;
+  profile: TranscodeProfile;
   /**
      * Posição (0-based) da faixa no array `audio` do `GET /v1/mediaprobe/files/{fileId}` —
      * **não** o campo `index` da faixa, que é o índice global do stream no arquivo.

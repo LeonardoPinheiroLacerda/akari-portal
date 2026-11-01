@@ -30,8 +30,11 @@ import type { TrackTitle } from './trackTitle';
 export interface SubtitleTrack {
   index?: StreamIndex;
   /**
-     * Codec no nome do ffprobe (ex.: `subrip`, `ass`). No playback, `subrip`/`srt` vira
-     * legenda soft (WebVTT) e os demais são queimados no vídeo.
+     * Codec no nome do ffprobe (ex.: `subrip`, `ass`, `hdmv_pgs_subtitle`). No playback,
+     * `subrip`/`srt` vira legenda soft (WebVTT); os demais formatos de texto (ex.: `ass`)
+     * são queimados no vídeo via libass; formatos de imagem (`hdmv_pgs_subtitle`,
+     * `dvd_subtitle`, `dvb_subtitle`) são queimados via overlay do próprio stream de
+     * legenda decodificado.
      * @nullable
      */
   codec?: string | null;

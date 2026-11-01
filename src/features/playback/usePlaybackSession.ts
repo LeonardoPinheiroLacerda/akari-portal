@@ -6,17 +6,16 @@ import {
   startPlaybackSession,
   switchPlaybackSessionTracks,
 } from '@/api/generated/endpoints/playback/playback'
-import type { PlaybackSessionResponse } from '@/api/generated/model'
-import { errorMessage, errorStatus } from '@/api/errors'
-import { apiUrl } from '@/api/http'
+import type { ApiError, PlaybackSessionResponse, TranscodeProfile } from '@/api/generated/model'
+import { errorCode, errorMessage, errorStatus } from '@/api/errors'
+import { apiUrl, HttpError } from '@/api/http'
 import { formatClock } from '@/lib/format'
 
-export type Profile = 'WEB' | 'TV' | 'MOBILE'
 export type Tracks = { audio: number; subtitle: number | null }
 
 export type ActiveSession = {
   id: string
-  profile: Profile
+  profile: TranscodeProfile
   tracks: Tracks
   startOffset: number
   playlistUrl: string
@@ -29,7 +28,8 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 /**
  * A playlist só existe quando o transcode produz o primeiro segmento; até lá a API responde
  * 404 (mesmo código de "sessão expirada"). Tenta com backoff e devolve o TTL do heartbeat
- * informado no header `X-Playback-Heartbeat-Ttl-Seconds`.
+ * informado no header `X-Playback-Heartbeat-Ttl-Seconds`. Qualquer outro status encerra a espera
+ * com o erro da API — `500 TRANSCODE_FAILED` diz que o transcode falhou e a playlist não vai sair.
  */
 async function waitForPlaylist(url: string, signal: AbortSignal): Promise<number | null> {
   let delay = 500
@@ -39,7 +39,7 @@ async function waitForPlaylist(url: string, signal: AbortSignal): Promise<number
       const ttl = Number(res.headers.get('X-Playback-Heartbeat-Ttl-Seconds'))
       return Number.isFinite(ttl) && ttl > 0 ? ttl : null
     }
-    if (res.status !== 404) throw new Error(`A playlist respondeu ${res.status}`)
+    if (res.status !== 404) throw new HttpError(res.status, (await res.json().catch(() => null)) as ApiError | null)
     await sleep(delay)
     delay = Math.min(3000, delay * 1.5)
   }
@@ -184,7 +184,7 @@ export function usePlaybackSession(video: React.RefObject<HTMLVideoElement | nul
   )
 
   const start = useCallback(
-    async (fileId: number, profile: Profile, tracks: Tracks) => {
+    async (fileId: number, profile: TranscodeProfile, tracks: Tracks) => {
       teardown()
       setStatus('starting')
       try {
@@ -228,6 +228,10 @@ export function usePlaybackSession(video: React.RefObject<HTMLVideoElement | nul
           setStatus('expired')
           push('A sessão expirou. Inicie uma nova para continuar.')
           teardown()
+        } else if (errorCode(e) === 'TRANSCODE_FAILED') {
+          setStatus('error')
+          push(`O transcode falhou: ${errorMessage(e)}`)
+          teardown()
         } else push(`Não foi possível mover: ${errorMessage(e)}`)
       }
     },
@@ -251,6 +255,10 @@ export function usePlaybackSession(video: React.RefObject<HTMLVideoElement | nul
         if (errorStatus(e) === 404) {
           setStatus('expired')
           push('A sessão expirou. Inicie uma nova para continuar.')
+          teardown()
+        } else if (errorCode(e) === 'TRANSCODE_FAILED') {
+          setStatus('error')
+          push(`O transcode falhou: ${errorMessage(e)}`)
           teardown()
         } else push(`Não foi possível trocar as faixas: ${errorMessage(e)}`)
       }

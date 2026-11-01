@@ -20,6 +20,8 @@ o TTL e o vencimento do heartbeat e um log de eventos que a aba mostra.
    segmento; até lá o backend responde `404`, o mesmo código de sessão inexistente ou expirada.
    **Confirmado** (contrato, operação da playlist). O hook tenta de novo com espera crescente
    (0,5 s até 3 s entre tentativas, 40 tentativas no máximo) e desiste com erro depois disso.
+   Qualquer outro status encerra a espera na hora com o erro da API — em especial
+   `500 TRANSCODE_FAILED`, que diz que o transcode falhou e a playlist nunca vai sair.
 3. **Player** — com a playlist pronta, carrega no hls.js (ou no HLS nativo do Safari). Segmentos
    ainda não gerados também respondem `404`; o hls.js é configurado para tentar de novo na borda
    ao vivo em vez de falhar. Se a sessão tem legenda, liga a primeira faixa de legenda do HLS.
@@ -30,6 +32,8 @@ o TTL e o vencimento do heartbeat e um log de eventos que a aba mostra.
    - `seek(posição)` pede ao backend; se o `startOffsetSeconds` devolvido mudou, o transcode
      recomeçou naquele ponto e o player recarrega a playlist; senão, só move o `currentTime`.
    - `switchTracks(faixas)` sempre reinicia o transcode na posição atual e recarrega o player.
+   - `TRANSCODE_FAILED` em qualquer dos dois (o reinício do transcode falhou) encerra a sessão no
+     portal com `status` `error`; os demais erros só vão para o log e a sessão segue.
 6. **Fim** — `reset()` para o heartbeat e o player e limpa o estado. Não existe operação para
    encerrar a sessão: o backend a descarta quando o heartbeat para e o TTL vence. **Confirmado**
    (contrato: não há `DELETE` em `/v1/playback/sessions`).
@@ -41,12 +45,9 @@ o TTL e o vencimento do heartbeat e um log de eventos que a aba mostra.
   (contrato, schema do pedido de sessão).
 - Se a legenda vai como faixa selecionável ou queimada no vídeo é decidido pelo backend, pelo
   formato da legenda; o portal não escolhe.
-- Os perfis de transcode são `WEB`, `TV` e `MOBILE` (tipo `Profile` no hook). O contrato declara o
-  `profile` como texto livre — "os profiles suportados pelo backend" — sem listar os valores; a
-  lista vem do enum `Profile` do backend. **Confirmado** (`FullTranscodeHlsStrategy.java:35`).
-  **Backlog real** (confirmado pelo mantenedor, pela política geral de regras de negócio no cliente
-  de [`ARQUITETURA_DO_SISTEMA.md`](../../../docs/ARQUITETURA_DO_SISTEMA.md#regras-arquiteturais)): a lista de perfis deveria vir
-  do contrato (como enum) em vez de ser repetida no portal.
+- Os perfis de transcode são o enum `TranscodeProfile` do contrato; a aba Reprodução oferece todos
+  os valores dele, e o `Record` de dicas da aba obriga a descrever um perfil novo assim que o
+  cliente gerado o trouxer.
 
 ## Observações
 
@@ -55,7 +56,8 @@ o TTL e o vencimento do heartbeat e um log de eventos que a aba mostra.
   `playback.session.heartbeat-ttl`). **Aceito** (confirmado pelo mantenedor): esperar o TTL é
   suficiente, sem operação de encerrar sessão.
 - **`404` ambíguo.** Playlist ainda não pronta, sessão expirada e sessão inexistente respondem
-  todos `404` com o mesmo código; só o texto da mensagem muda. O portal trata qualquer `404` da
+  todos `404` com o mesmo código; só o texto da mensagem muda (falha do transcode tem código
+  próprio, `TRANSCODE_FAILED`). O portal trata qualquer `404` da
   playlist como "ainda não ficou pronta" até esgotar as tentativas — uma sessão que já expirou só
   aparece como erro depois de todas elas. **Backlog real** (confirmado pelo mantenedor): o backend
   deveria diferenciar os casos por código de erro, e o portal passar a chavear por ele.
