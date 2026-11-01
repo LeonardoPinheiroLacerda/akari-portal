@@ -53,6 +53,15 @@ sessão de reprodução em [`src/features/playback`](../../features/playback/REA
   Não aplica overrides nem cai nos dados da AniList, para que dê para conferir se o vínculo —
   inclusive o automático da ingestão — aponta para o título certo. Quantos overrides existem
   aparece no rodapé do card.
+- A ficha vem do TMDB sem idioma pedido, então título, sinopse e gêneros saem em `en-US`, não no
+  idioma das preferências. **Confirmado** (contrato, `TmdbBindingDetails`).
+- O painel de vincular (ou de trocar o vínculo) começa pela **proposta do anibridge**
+  (`POST /v1/metadata/tmdb/binding-proposals`): o título que o anibridge propõe para o anime, com a
+  mesma ficha do card do vínculo, e "Vincular proposta". É o mesmo critério do vínculo automático
+  da ingestão. A chamada não grava nada, então o portal a lê como consulta. Se a proposta já é o
+  vínculo atual, aparece "Vínculo atual" no lugar do botão; sem mapeamento no anibridge (`404`), um
+  aviso, e a busca manual logo abaixo segue disponível. **Confirmado** (contrato,
+  `proposeTmdbBinding`).
 - A busca no TMDB escolhe entre série e filme, usa o idioma padrão das preferências como idioma
   inicial e pagina os resultados.
 - "Remover vínculo" apaga o vínculo; os overrides caem em cascata. **Confirmado** (contrato,

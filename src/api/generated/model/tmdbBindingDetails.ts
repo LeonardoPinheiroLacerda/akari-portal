@@ -23,8 +23,10 @@ import type { LanguageCode } from './languageCode';
 import type { VoteAverage } from './voteAverage';
 
 /**
- * Ficha resumida da série (`mediaType` `TV`) ou filme (`MOVIE`) vinculado, no idioma de
- * `tmdb.default-language`. Campos que só existem num dos tipos vêm `null` no outro.
+ * Ficha resumida da série (`mediaType` `TV`) ou filme (`MOVIE`) vinculado. A ficha é
+ * buscada no TMDB sem `language`, então os textos (título, sinopse, gêneros) vêm no idioma
+ * padrão do TMDB (`en-US`), não em `tmdb.default-language`. Campos que só existem num dos
+ * tipos vêm `null` no outro.
  */
 export interface TmdbBindingDetails {
   /**

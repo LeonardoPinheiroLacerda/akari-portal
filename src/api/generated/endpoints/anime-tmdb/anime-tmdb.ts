@@ -107,7 +107,7 @@ export const getGetTmdbStateQueryKey = (anilistId: number,) => {
     }
 
 
-export const getGetTmdbStateQueryOptions = <TData = Awaited<ReturnType<typeof getTmdbState>>, TError = NotFoundResponse | InternalServerErrorResponse>(anilistId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTmdbState>>, TError, TData>>, request?: SecondParameter<typeof http>}
+export const getGetTmdbStateQueryOptions = <TData = Awaited<ReturnType<typeof getTmdbState>>, TError = NotFoundResponse | InternalServerErrorResponse | BadGatewayResponse | ServiceUnavailableResponse>(anilistId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTmdbState>>, TError, TData>>, request?: SecondParameter<typeof http>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -126,10 +126,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetTmdbStateQueryResult = NonNullable<Awaited<ReturnType<typeof getTmdbState>>>
-export type GetTmdbStateQueryError = NotFoundResponse | InternalServerErrorResponse
+export type GetTmdbStateQueryError = NotFoundResponse | InternalServerErrorResponse | BadGatewayResponse | ServiceUnavailableResponse
 
 
-export function useGetTmdbState<TData = Awaited<ReturnType<typeof getTmdbState>>, TError = NotFoundResponse | InternalServerErrorResponse>(
+export function useGetTmdbState<TData = Awaited<ReturnType<typeof getTmdbState>>, TError = NotFoundResponse | InternalServerErrorResponse | BadGatewayResponse | ServiceUnavailableResponse>(
  anilistId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTmdbState>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getTmdbState>>,
@@ -139,7 +139,7 @@ export function useGetTmdbState<TData = Awaited<ReturnType<typeof getTmdbState>>
       >, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetTmdbState<TData = Awaited<ReturnType<typeof getTmdbState>>, TError = NotFoundResponse | InternalServerErrorResponse>(
+export function useGetTmdbState<TData = Awaited<ReturnType<typeof getTmdbState>>, TError = NotFoundResponse | InternalServerErrorResponse | BadGatewayResponse | ServiceUnavailableResponse>(
  anilistId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTmdbState>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getTmdbState>>,
@@ -149,7 +149,7 @@ export function useGetTmdbState<TData = Awaited<ReturnType<typeof getTmdbState>>
       >, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetTmdbState<TData = Awaited<ReturnType<typeof getTmdbState>>, TError = NotFoundResponse | InternalServerErrorResponse>(
+export function useGetTmdbState<TData = Awaited<ReturnType<typeof getTmdbState>>, TError = NotFoundResponse | InternalServerErrorResponse | BadGatewayResponse | ServiceUnavailableResponse>(
  anilistId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTmdbState>>, TError, TData>>, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -157,7 +157,7 @@ export function useGetTmdbState<TData = Awaited<ReturnType<typeof getTmdbState>>
  * @summary Estado atual do binding TMDB (binding + overrides + dados do TMDB)
  */
 
-export function useGetTmdbState<TData = Awaited<ReturnType<typeof getTmdbState>>, TError = NotFoundResponse | InternalServerErrorResponse>(
+export function useGetTmdbState<TData = Awaited<ReturnType<typeof getTmdbState>>, TError = NotFoundResponse | InternalServerErrorResponse | BadGatewayResponse | ServiceUnavailableResponse>(
  anilistId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTmdbState>>, TError, TData>>, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
@@ -379,7 +379,7 @@ return http<TmdbAnimeStateOkResponse>(getUpdateTmdbOverridesUrl(anilistId),
 
 export const getUpdateTmdbOverridesMutationKey = () => ['updateTmdbOverrides'] as const;
 
-export const getUpdateTmdbOverridesMutationOptions = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse,
+export const getUpdateTmdbOverridesMutationOptions = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | BadGatewayResponse | ServiceUnavailableResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTmdbOverrides>>, TError,UpdateTmdbOverridesMutationVariables, TContext>, request?: SecondParameter<typeof http>}
 ): UseMutationOptions<Awaited<ReturnType<typeof updateTmdbOverrides>>, TError,UpdateTmdbOverridesMutationVariables, TContext> => {
 
@@ -408,13 +408,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateTmdbOverridesMutationResult = NonNullable<Awaited<ReturnType<typeof updateTmdbOverrides>>>
     export type UpdateTmdbOverridesMutationBody = TmdbOverridesRequestBodyBody
-    export type UpdateTmdbOverridesMutationError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse
+    export type UpdateTmdbOverridesMutationError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | BadGatewayResponse | ServiceUnavailableResponse
     export type UpdateTmdbOverridesMutationVariables = {anilistId: number;data: TmdbOverridesRequestBodyBody}
 
     /**
  * @summary Substitui o bloco inteiro de overrides
  */
-export const useUpdateTmdbOverrides = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse,
+export const useUpdateTmdbOverrides = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | BadGatewayResponse | ServiceUnavailableResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTmdbOverrides>>, TError,UpdateTmdbOverridesMutationVariables, TContext>, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof updateTmdbOverrides>>,

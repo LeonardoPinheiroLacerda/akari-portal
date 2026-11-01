@@ -1,9 +1,11 @@
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { bindTmdb, clearTmdbBinding } from '@/api/generated/endpoints/anime-tmdb/anime-tmdb'
+import { getProposeTmdbBindingUrl, proposeTmdbBinding } from '@/api/generated/endpoints/anime-tmdb-proposal/anime-tmdb-proposal'
 import { useSearchTmdbMovie, useSearchTmdbTv } from '@/api/generated/endpoints/tmdb-search/tmdb-search'
-import type { TmdbAnimeStateResponse, TmdbMediaType } from '@/api/generated/model'
-import { toastError } from '@/api/errors'
+import type { TmdbBindingDetails, TmdbMediaType } from '@/api/generated/model'
+import { errorStatus, toastError } from '@/api/errors'
 import { invalidate } from '@/api/query'
 import { Button } from '@/components/ui/button'
 import { Chip } from '@/components/ui/chip'
@@ -101,7 +103,7 @@ export function TmdbTab({ item, onGo }: { item: ItemState; onGo: (t: ItemTab) =>
               </Button>
             </div>
           )}
-          <BindingDetails state={b} />
+          <TmdbDetails tmdbId={b.tmdbId} mediaType={b.mediaType!} details={b.details} boundAt={b.createdAt} />
         </Section>
       ) : (
         <div className="flex items-center gap-3 rounded-r border border-dashed border-line px-5 py-4 text-13 text-muted">
@@ -126,10 +128,22 @@ export function TmdbTab({ item, onGo }: { item: ItemState; onGo: (t: ItemTab) =>
   )
 }
 
-/** Ficha do próprio TMDB, sem overrides nem dados da AniList: serve para conferir se o vínculo aponta para o título certo. */
-function BindingDetails({ state: b }: { state: TmdbAnimeStateResponse }) {
-  const d = b.details
-  const isTv = b.mediaType === 'TV'
+/**
+ * Ficha do próprio TMDB, sem overrides nem dados da AniList: serve para conferir se o vínculo (ou a proposta do anibridge)
+ * aponta para o título certo.
+ */
+function TmdbDetails({
+  tmdbId,
+  mediaType,
+  details: d,
+  boundAt,
+}: {
+  tmdbId: number
+  mediaType: TmdbMediaType
+  details: TmdbBindingDetails
+  boundAt?: string | null
+}) {
+  const isTv = mediaType === 'TV'
   return (
     <div className="flex flex-wrap gap-5 px-5 py-[18px]">
       <Thumb src={d.posterUrl} width={92} rounded="rs" className="border border-line" />
@@ -140,9 +154,7 @@ function BindingDetails({ state: b }: { state: TmdbAnimeStateResponse }) {
             {
               label: 'tmdbId',
               mono: true,
-              value: (
-                <ExternalLink href={`https://www.themoviedb.org/${isTv ? 'tv' : 'movie'}/${b.tmdbId}`}>{b.tmdbId}</ExternalLink>
-              ),
+              value: <ExternalLink href={`https://www.themoviedb.org/${isTv ? 'tv' : 'movie'}/${tmdbId}`}>{tmdbId}</ExternalLink>,
             },
             { label: 'Tipo', value: isTv ? 'TV · Série' : 'MOVIE · Filme', mono: true },
             { label: 'Título', value: d.title },
@@ -167,7 +179,7 @@ function BindingDetails({ state: b }: { state: TmdbAnimeStateResponse }) {
               mono: true,
             },
             { label: 'Gêneros', value: d.genres?.length ? d.genres.join(', ') : '—' },
-            { label: 'Vinculado em', value: formatDateTime(b.createdAt), mono: true },
+            ...(boundAt !== undefined ? [{ label: 'Vinculado em', value: formatDateTime(boundAt), mono: true }] : []),
           ]}
         />
         {d.overview && <p className="m-0 line-clamp-4 max-w-[820px] text-13 leading-[1.55] text-muted">{d.overview}</p>}
@@ -175,6 +187,66 @@ function BindingDetails({ state: b }: { state: TmdbAnimeStateResponse }) {
     </div>
   )
 }
+
+/**
+ * Proposta de vínculo do anibridge para o anime (`POST /v1/metadata/tmdb/binding-proposals`), com a ficha do título
+ * proposto. A chamada não grava nada, por isso é lida como consulta.
+ */
+function TmdbProposal({
+  anilistId,
+  current,
+  pending,
+  onPick,
+}: {
+  anilistId: number
+  current: { tmdbId: number; mediaType: TmdbMediaType } | null
+  pending: number | null
+  onPick: (tmdbId: number, mediaType: TmdbMediaType, name?: string | null) => void
+}) {
+  const proposal = useQuery({
+    queryKey: [getProposeTmdbBindingUrl(), anilistId],
+    queryFn: ({ signal }) => proposeTmdbBinding({ anilistId }, { signal }),
+  })
+  const p = proposal.data
+  const isCurrent = p != null && current?.tmdbId === p.tmdbId && current.mediaType === p.mediaType
+
+  return (
+    <div className="border-b border-line">
+      <div className="flex flex-wrap items-center gap-2.5 px-5 pt-3.5">
+        <span className="font-semibold">Proposta do anibridge</span>
+        <span className="min-w-[220px] flex-1 text-sm text-muted">
+          O mesmo critério do vínculo automático da ingestão. Confira a ficha — o anibridge pode apontar para um título
+          dessincronizado do TMDB.
+        </span>
+        {p &&
+          (isCurrent ? (
+            <Chip tone="ok">Vínculo atual</Chip>
+          ) : (
+            <Button
+              size="sm"
+              variant="primary"
+              loading={pending === p.tmdbId}
+              disabled={pending != null}
+              onClick={() => onPick(p.tmdbId, p.mediaType, p.details.title)}
+            >
+              Vincular proposta
+            </Button>
+          ))}
+      </div>
+      {proposal.isLoading && <Loading label="Consultando o anibridge…" />}
+      {proposal.isError &&
+        (errorStatus(proposal.error) === 404 ? (
+          <div className="px-5 py-3.5 text-13 text-muted">
+            O anibridge não tem proposta para este anime (ou o título proposto não existe mais no TMDB). Busque abaixo.
+          </div>
+        ) : (
+          <ErrorState error={proposal.error} onRetry={() => proposal.refetch()} />
+        ))}
+      {p && <TmdbDetails tmdbId={p.tmdbId} mediaType={p.mediaType} details={p.details} />}
+    </div>
+  )
+}
+
 function TmdbSearch({
   anilistId,
   current,
@@ -235,12 +307,12 @@ function TmdbSearch({
           pop: r.popularity,
         }))
 
-  const pick = async (tmdbId: number, name?: string | null) => {
+  const pick = async (tmdbId: number, mediaType: TmdbMediaType, name?: string | null) => {
     setPending(tmdbId)
     try {
       // O backend recusa um segundo vínculo: para trocar, remove o atual antes.
       if (current) await clearTmdbBinding(anilistId)
-      await bindTmdb(anilistId, { tmdbId, mediaType: type })
+      await bindTmdb(anilistId, { tmdbId, mediaType })
       await refreshAfterTmdbChange(anilistId)
       toast.success(`Vinculado ao TMDB: ${name ?? tmdbId}`)
       onBound()
@@ -266,6 +338,7 @@ function TmdbSearch({
         )
       }
     >
+      <TmdbProposal anilistId={anilistId} current={current} pending={pending} onPick={pick} />
       <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-5 py-3">
         <Segmented
           size="md"
@@ -338,7 +411,7 @@ function TmdbSearch({
                   className="border-accent"
                   loading={pending === r.id}
                   disabled={pending != null}
-                  onClick={() => pick(r.id, r.title)}
+                  onClick={() => pick(r.id, type, r.title)}
                 >
                   Vincular
                 </Button>
