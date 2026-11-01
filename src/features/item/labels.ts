@@ -93,3 +93,23 @@ export const ISO639: [string, string][] = [
   ['pl', 'Polonês'],
   ['tr', 'Turco'],
 ]
+
+/** Idiomas das faixas de áudio e legenda, no código ISO 639-2/B da tag `language` dos arquivos (Matroska). */
+export const ISO639_2: [string, string][] = [
+  ['jpn', 'Japonês'],
+  ['eng', 'Inglês'],
+  ['por', 'Português'],
+  ['spa', 'Espanhol'],
+  ['fre', 'Francês'],
+  ['ger', 'Alemão'],
+  ['ita', 'Italiano'],
+  ['kor', 'Coreano'],
+  ['chi', 'Chinês'],
+  ['rus', 'Russo'],
+  ['ara', 'Árabe'],
+  ['hin', 'Hindi'],
+  ['tha', 'Tailandês'],
+  ['ind', 'Indonésio'],
+  ['pol', 'Polonês'],
+  ['tur', 'Turco'],
+]

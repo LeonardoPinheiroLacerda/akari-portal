@@ -15,7 +15,11 @@ mudar a posição e as faixas.
 o TTL e o vencimento do heartbeat e um log de eventos que a aba mostra.
 
 1. **Início** — `start(fileId, perfil, faixas)` cria a sessão no backend, que devolve o id, a URL
-   da playlist e o instante em que o transcode começou (`startOffsetSeconds`).
+   da playlist, o instante em que o transcode começou (`startOffsetSeconds`) e as faixas ativas.
+   Áudio ou legenda ausente em `faixas` fica para o backend escolher pelas preferências
+   `playback.default.*`; legenda `null` vai como `subtitleDisabled: true`, porque
+   `subtitleTrackIndex` ausente ou `null` significa "legenda padrão", não "sem legenda".
+   **Confirmado** (contrato, schema do pedido de sessão).
 2. **Espera da playlist** — a playlist só existe depois que o transcode produz o primeiro
    segmento; até lá o backend responde `404`, o mesmo código de sessão inexistente ou expirada.
    **Confirmado** (contrato, operação da playlist). O hook tenta de novo com espera crescente
@@ -32,6 +36,9 @@ o TTL e o vencimento do heartbeat e um log de eventos que a aba mostra.
    - `seek(posição)` pede ao backend; se o `startOffsetSeconds` devolvido mudou, o transcode
      recomeçou naquele ponto e o player recarrega a playlist; senão, só move o `currentTime`.
    - `switchTracks(faixas)` sempre reinicia o transcode na posição atual e recarrega o player.
+     A troca pede faixas concretas: as preferências só valem no início da sessão.
+   - As faixas da sessão no portal são sempre as que o backend devolve (`audioTrackIndex` e
+     `subtitleTrackIndex` da resposta do início, do seek e da troca), não as que o portal pediu.
    - `TRANSCODE_FAILED` em qualquer dos dois (o reinício do transcode falhou) encerra a sessão no
      portal com `status` `error`; os demais erros só vão para o log e a sessão segue.
 6. **Fim** — `reset()` para o heartbeat e o player e limpa o estado. Não existe operação para

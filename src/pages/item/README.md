@@ -92,6 +92,10 @@ sessão de reprodução em [`src/features/playback`](../../features/playback/REA
 - Com o arquivo disponível, lê o probe de mídia (faixas de áudio e legenda) e libera o player:
   perfil (os valores do enum `TranscodeProfile`), faixa de áudio, legenda, "Ir para" uma posição
   (`mm:ss`) e troca de faixas durante a reprodução.
+- Áudio e legenda começam em "Padrão das preferências", que mostra o idioma (e, na legenda, se é
+  completa ou forçada) das preferências `playback.default.*` e deixa o backend escolher a faixa; a
+  legenda também tem "Sem legenda". Com a sessão ativa, a opção de padrão some e os seletores
+  mostram as faixas que o backend escolheu, prontas para a troca de faixas.
 - A aba indica se a legenda será selecionável ou queimada no vídeo pelo codec (SRT é selecionável),
   repetindo a regra que o backend aplica.
 - As informações técnicas do arquivo listam as faixas de vídeo (com DAR e SAR — SAR diferente de

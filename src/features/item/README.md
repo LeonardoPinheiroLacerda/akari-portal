@@ -41,6 +41,8 @@ para travar as abas que dependem de um vínculo anterior.
   preferências de idioma do TMDB). São uma seleção dos idiomas mais comuns, não a lista completa
   do TMDB. **Aceito** (confirmado pelo mantenedor): a seleção cobre o uso real; um idioma novo
   entra na lista quando for preciso.
+- `ISO639_2` — idiomas das preferências de faixa padrão da reprodução, no código de 3 letras da tag
+  `language` das faixas (ISO 639-2/B, como o Matroska grava). Também é uma seleção dos mais comuns.
 
 ## Auto-pair (`autoPair.ts`)
 

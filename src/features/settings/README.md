@@ -18,10 +18,11 @@ Devolve a preferência da chave pedida (`setting`), junto com o estado da query.
 
 ### Onde é usado
 
-| Tela        | Chave                   | Para quê                                                                          |
-| ----------- | ----------------------- | --------------------------------------------------------------------------------- |
-| Ingestão    | `tmdb.api-key`          | Com a chave vazia (`configured: false`), avisar e desabilitar "Iniciar ingestão". |
-| Item › TMDB | `tmdb.default-language` | Idioma inicial da busca no TMDB.                                                  |
+| Tela              | Chave                                                                                                       | Para quê                                                                          |
+| ----------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Ingestão          | `tmdb.api-key`                                                                                              | Com a chave vazia (`configured: false`), avisar e desabilitar "Iniciar ingestão". |
+| Item › TMDB       | `tmdb.default-language`                                                                                     | Idioma inicial da busca no TMDB.                                                  |
+| Item › Reprodução | `playback.default.audio-language`, `playback.default.subtitle-language`, `playback.default.subtitle-forced` | Rótulo da opção "Padrão das preferências" dos seletores de faixa.                 |
 
 O bloqueio da Ingestão antecipa uma regra do backend, que recusa a ingestão com `400` quando
 `tmdb.api-key` está vazia. **Confirmado** (contrato, operação de ingestão; `IngestionService`

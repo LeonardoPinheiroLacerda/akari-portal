@@ -21,15 +21,21 @@ botão.
 
 O mapa `META` dá a cada chave conhecida um rótulo, uma explicação e um tipo de controle:
 
-| Tipo              | Controle                                        | Chaves                                                                                       |
-| ----------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `path`            | texto                                           | `cache.dir`, `playback.work.base-dir`                                                        |
-| `bytes`           | texto em bytes, com o equivalente em GB ao lado | `cache.max-size-bytes`                                                                       |
-| `duration`        | texto ISO-8601, com a duração legível ao lado   | `playback.session.heartbeat-ttl`, `tmdb.cache.ttl`, `anilist.cache.ttl`                      |
-| `enum`            | controle segmentado                             | `playback.transcode.hardware-acceleration` (`NONE`, `VIDEOTOOLBOX`, `NVENC`, `QSV`, `VAAPI`) |
-| `secret`          | senha                                           | `tmdb.api-key`                                                                               |
-| `locale` / `lang` | select de idiomas                               | `tmdb.default-language` / `tmdb.image.logo-language`, `tmdb.image.backdrop-language`         |
-| `bool`            | switch                                          | `tmdb.include-adult`                                                                         |
+| Tipo              | Controle                                        | Chaves                                                                                                                                                              |
+| ----------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `path`            | texto                                           | `cache.dir`, `playback.work.base-dir`                                                                                                                               |
+| `bytes`           | texto em bytes, com o equivalente em GB ao lado | `cache.max-size-bytes`                                                                                                                                              |
+| `duration`        | texto ISO-8601, com a duração legível ao lado   | `playback.session.heartbeat-ttl`, `tmdb.cache.ttl`, `anilist.cache.ttl`                                                                                             |
+| `enum`            | controle segmentado                             | `playback.transcode.hardware-acceleration` (`NONE`, `VIDEOTOOLBOX`, `NVENC`, `QSV`, `VAAPI`), `playback.default.subtitle-forced` (`false` Completa, `true` Forçada) |
+| `secret`          | senha                                           | `tmdb.api-key`                                                                                                                                                      |
+| `locale` / `lang` | select de idiomas                               | `tmdb.default-language` / `tmdb.image.logo-language`, `tmdb.image.backdrop-language`                                                                                |
+| `trackLang`       | select de idiomas ISO 639-2 (`ISO639_2`)        | `playback.default.audio-language`, `playback.default.subtitle-language`                                                                                             |
+| `bool`            | switch                                          | `tmdb.include-adult`                                                                                                                                                |
+
+Os idiomas de faixa usam o código de 3 letras porque o backend compara o valor, sem diferenciar
+maiúsculas, com a tag `language` das faixas do probe, que vem do arquivo (no Matroska, ISO
+639-2/B: `fre`, `ger`, `chi`). **Confirmado** (`playback/README.md` do backend, "Faixas padrão").
+Um valor fora da lista aparece como opção com o próprio código.
 
 Uma chave fora do mapa aparece com a própria chave como rótulo e um campo de texto (ou senha, se
 for secreta).

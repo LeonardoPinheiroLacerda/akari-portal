@@ -15,7 +15,8 @@ import { Segmented } from '@/components/ui/segmented'
 import { Select } from '@/components/ui/select'
 import { EmptyState, ErrorState, Loading } from '@/components/ui/states'
 import type { ItemState } from '@/features/item/useItem'
-import { usePlaybackSession } from '@/features/playback/usePlaybackSession'
+import { usePlaybackSession, type StartTracks, type Tracks } from '@/features/playback/usePlaybackSession'
+import { useSetting } from '@/features/settings/useSetting'
 import { providerName, usesCache } from '@/features/providers/types'
 import { useProviders } from '@/features/providers/useProviders'
 import { byName } from '@/features/item/autoPair'
@@ -30,6 +31,9 @@ const PROFILE_HINT: Record<TranscodeProfile, string> = {
 }
 
 const isSoft = (codec?: string | null) => codec === 'subrip' || codec === 'srt'
+/** Valor dos seletores de faixa que pede a faixa padrão das preferências no início da sessão. */
+const DEFAULT = 'default'
+
 const isAnamorphic = (sar?: string | null) => !!sar && sar !== '1:1' && sar !== '0:1'
 const subLabel = (s: SubtitleTrack) => s.title ?? s.language ?? s.codec ?? 'Legenda'
 
@@ -165,13 +169,13 @@ export function PlaybackTab({ item, folderId }: { item: ItemState; folderId: num
 function Player({ fileId, fileName, probe }: { fileId: number; fileName: string; probe: MediaInfoResponse }) {
   const video = useRef<HTMLVideoElement>(null)
   const pb = usePlaybackSession(video)
-  const defaultAudio = Math.max(
-    0,
-    probe.audio.findIndex((a) => a.defaultTrack),
-  )
+  const { setting: audioLang } = useSetting('playback.default.audio-language')
+  const { setting: subLang } = useSetting('playback.default.subtitle-language')
+  const { setting: subForced } = useSetting('playback.default.subtitle-forced')
   const [profile, setProfile] = useState<TranscodeProfile>('WEB')
-  const [audio, setAudio] = useState(String(defaultAudio))
-  const [sub, setSub] = useState('')
+  // DEFAULT pede a faixa padrão das preferências; '' na legenda é "sem legenda".
+  const [audio, setAudio] = useState(DEFAULT)
+  const [sub, setSub] = useState(DEFAULT)
   const [seekVal, setSeekVal] = useState('00:00')
   const [now, setNow] = useState(Date.now())
 
@@ -181,13 +185,20 @@ function Player({ fileId, fileName, probe }: { fileId: number; fileName: string;
   }, [])
 
   const active = pb.session != null && pb.status !== 'expired' && pb.status !== 'idle'
-  const tracks = { audio: Number(audio), subtitle: sub === '' ? null : Number(sub) }
+  // Com sessão ativa, "padrão" já virou uma faixa concreta: os seletores mostram a que o backend escolheu.
+  const audioVal = active && audio === DEFAULT ? String(pb.session!.tracks.audio) : audio
+  const subVal = active && sub === DEFAULT ? String(pb.session!.tracks.subtitle ?? '') : sub
+  const startTracks: StartTracks = {
+    audio: audio === DEFAULT ? undefined : Number(audio),
+    subtitle: sub === DEFAULT ? undefined : sub === '' ? null : Number(sub),
+  }
+  const tracks: Tracks = { audio: Number(audioVal), subtitle: subVal === '' ? null : Number(subVal) }
   const changed = active && (pb.session!.tracks.audio !== tracks.audio || pb.session!.tracks.subtitle !== tracks.subtitle)
-  const subSel = sub === '' ? null : probe.subtitles[Number(sub)]
+  const subSel = subVal === '' || subVal === DEFAULT ? null : probe.subtitles[Number(subVal)]
   const duration = probe.container.durationSeconds ?? 0
   const hbLeft = pb.expiresAt ? Math.max(0, Math.round((pb.expiresAt - now) / 1000)) : null
 
-  const start = () => pb.start(fileId, profile, tracks).catch(() => undefined)
+  const start = () => pb.start(fileId, profile, startTracks).catch(() => undefined)
 
   return (
     <>
@@ -253,21 +264,32 @@ function Player({ fileId, fileName, probe }: { fileId: number; fileName: string;
               <span className="text-xs text-muted">Faixa de áudio</span>
               <Select
                 aria-label="Faixa de áudio"
-                value={audio}
+                value={audioVal}
                 onChange={setAudio}
-                options={probe.audio.map((a, i) => ({
-                  value: String(i),
-                  label: `${i} · ${a.title ?? a.language ?? 'Áudio'} · ${a.codec ?? ''} ${a.channelLayout ?? ''}`.trim(),
-                }))}
+                options={[
+                  ...(active ? [] : [{ value: DEFAULT, label: `Padrão das preferências (${audioLang?.value ?? '?'})` }]),
+                  ...probe.audio.map((a, i) => ({
+                    value: String(i),
+                    label: `${i} · ${a.title ?? a.language ?? 'Áudio'} · ${a.codec ?? ''} ${a.channelLayout ?? ''}`.trim(),
+                  })),
+                ]}
               />
             </label>
             <label className="flex min-w-0 flex-[1_1_240px] flex-col gap-1">
               <span className="text-xs text-muted">Legenda</span>
               <Select
                 aria-label="Legenda"
-                value={sub}
+                value={subVal}
                 onChange={setSub}
                 options={[
+                  ...(active
+                    ? []
+                    : [
+                        {
+                          value: DEFAULT,
+                          label: `Padrão das preferências (${subLang?.value ?? '?'}, ${subForced?.value === 'true' ? 'forçada' : 'completa'})`,
+                        },
+                      ]),
                   { value: '', label: 'Sem legenda' },
                   ...probe.subtitles.map((s, i) => ({
                     value: String(i),
@@ -366,12 +388,16 @@ function Player({ fileId, fileName, probe }: { fileId: number; fileName: string;
         </section>
       </div>
 
-      <TechInfo probe={probe} audio={Number(audio)} sub={sub === '' ? null : Number(sub)} />
+      <TechInfo
+        probe={probe}
+        audio={audioVal === DEFAULT ? null : Number(audioVal)}
+        sub={subVal === DEFAULT || subVal === '' ? null : Number(subVal)}
+      />
     </>
   )
 }
 
-function TechInfo({ probe, audio, sub }: { probe: MediaInfoResponse; audio: number; sub: number | null }) {
+function TechInfo({ probe, audio, sub }: { probe: MediaInfoResponse; audio: number | null; sub: number | null }) {
   const c = probe.container
   const head = 'grid gap-2.5 border-b border-line px-4 py-2 text-2xs uppercase tracking-[.06em] text-muted'
   const row = 'grid items-center gap-2.5 border-b border-line px-4 py-[9px] font-mono text-sm'

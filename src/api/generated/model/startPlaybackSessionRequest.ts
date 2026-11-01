@@ -30,16 +30,33 @@ export interface StartPlaybackSessionRequest {
   /**
      * Posição (0-based) da faixa no array `audio` do `GET /v1/mediaprobe/files/{fileId}` —
      * **não** o campo `index` da faixa, que é o índice global do stream no arquivo.
+     *
+     * Ausente/`null` usa o áudio padrão das preferências: a primeira faixa no idioma
+     * `playback.default.audio-language`; sem faixa nesse idioma, a marcada como padrão no
+     * arquivo, senão a primeira.
      * @minimum 0
+     * @nullable
      */
-  audioTrackIndex: number;
+  audioTrackIndex?: number | null;
   /**
      * Posição (0-based) da faixa no array `subtitles` do `GET /v1/mediaprobe/files/{fileId}`
      * — **não** o campo `index` da faixa. Legendas SRT viram faixa WebVTT soft
      * (selecionável no player); ASS e demais formatos são queimados no vídeo (hardsub).
-     * Ausente/`null` reproduz sem legenda.
+     *
+     * Ausente/`null` usa a legenda padrão das preferências: a primeira faixa no idioma
+     * `playback.default.subtitle-language`, forçada ou completa conforme
+     * `playback.default.subtitle-forced` (forçada = flag `forced` do arquivo ou título com
+     * `forced`, `forçada`, `forcada`, `signs` ou `songs`, sem diferenciar maiúsculas); sem
+     * faixa desse tipo, a primeira do idioma; sem faixa no idioma, reproduz sem legenda.
+     * Para
+     * reproduzir sem legenda, use `subtitleDisabled`.
      * @minimum 0
      * @nullable
      */
   subtitleTrackIndex?: number | null;
+  /**
+     * `true` reproduz sem legenda, ignorando `subtitleTrackIndex` e a legenda padrão das
+     * preferências.
+     */
+  subtitleDisabled?: boolean;
 }

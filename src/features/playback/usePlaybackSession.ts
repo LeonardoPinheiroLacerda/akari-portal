@@ -13,6 +13,19 @@ import { formatClock } from '@/lib/format'
 
 export type Tracks = { audio: number; subtitle: number | null }
 
+/**
+ * Faixas pedidas no início da sessão. `audio` ou `subtitle` ausente usa a faixa padrão das
+ * preferências (`playback.default.*`); `subtitle: null` começa sem legenda.
+ */
+export type StartTracks = { audio?: number; subtitle?: number | null }
+
+const sessionTracks = (s: PlaybackSessionResponse): Tracks => ({
+  audio: s.audioTrackIndex,
+  subtitle: s.subtitleTrackIndex ?? null,
+})
+
+const describeTracks = (t: Tracks) => `áudio ${t.audio} · ${t.subtitle != null ? `legenda ${t.subtitle}` : 'sem legenda'}`
+
 export type ActiveSession = {
   id: string
   profile: TranscodeProfile
@@ -108,7 +121,7 @@ export function usePlaybackSession(video: React.RefObject<HTMLVideoElement | nul
 
   /** Carrega (ou recarrega) a playlist no player e posiciona em `target` (segundos da mídia). */
   const attach = useCallback(
-    async (s: PlaybackSessionResponse, target: number, meta: Omit<ActiveSession, 'id' | 'startOffset' | 'playlistUrl'>) => {
+    async (s: PlaybackSessionResponse, target: number, profile: TranscodeProfile) => {
       const v = video.current
       if (!v) return
       abort.current?.abort()
@@ -118,7 +131,8 @@ export function usePlaybackSession(video: React.RefObject<HTMLVideoElement | nul
         id: s.sessionId,
         startOffset: s.startOffsetSeconds,
         playlistUrl: s.playlistUrl,
-        ...meta,
+        profile,
+        tracks: sessionTracks(s),
       }
       setSession(next)
       setStatus('loading')
@@ -149,7 +163,7 @@ export function usePlaybackSession(video: React.RefObject<HTMLVideoElement | nul
         hls.current = h
         h.on(Hls.Events.MANIFEST_PARSED, () => {
           if (local > 0) v.currentTime = local
-          if (meta.tracks.subtitle != null && h.subtitleTracks.length) {
+          if (next.tracks.subtitle != null && h.subtitleTracks.length) {
             h.subtitleTrack = 0
             h.subtitleDisplay = true
           }
@@ -184,7 +198,7 @@ export function usePlaybackSession(video: React.RefObject<HTMLVideoElement | nul
   )
 
   const start = useCallback(
-    async (fileId: number, profile: TranscodeProfile, tracks: Tracks) => {
+    async (fileId: number, profile: TranscodeProfile, tracks: StartTracks) => {
       teardown()
       setStatus('starting')
       try {
@@ -193,11 +207,13 @@ export function usePlaybackSession(video: React.RefObject<HTMLVideoElement | nul
           profile,
           audioTrackIndex: tracks.audio,
           subtitleTrackIndex: tracks.subtitle,
+          subtitleDisabled: tracks.subtitle === null,
         })
+        const fromPrefs = tracks.audio === undefined || tracks.subtitle === undefined
         push(
-          `Sessão iniciada · perfil ${profile} · áudio ${tracks.audio}${tracks.subtitle != null ? ` · legenda ${tracks.subtitle}` : ' · sem legenda'}`,
+          `Sessão iniciada · perfil ${profile} · ${describeTracks(sessionTracks(s))}${fromPrefs ? ' (padrão das preferências)' : ''}`,
         )
-        await attach(s, s.startOffsetSeconds, { profile, tracks })
+        await attach(s, s.startOffsetSeconds, profile)
         push('Playlist pronta')
       } catch (e) {
         if ((e as Error).name === 'AbortError') return
@@ -218,7 +234,7 @@ export function usePlaybackSession(video: React.RefObject<HTMLVideoElement | nul
         const res = await seekPlaybackSession(s.id, { positionSeconds: target })
         if (res.startOffsetSeconds !== s.startOffset) {
           push(`Posição movida para ${formatClock(target)} · transcode reiniciado nesse ponto`)
-          await attach(res, target, { profile: s.profile, tracks: s.tracks })
+          await attach(res, target, s.profile)
         } else {
           v.currentTime = Math.max(0, target - s.startOffset)
           push(`Posição movida para ${formatClock(target)}`)
@@ -249,8 +265,8 @@ export function usePlaybackSession(video: React.RefObject<HTMLVideoElement | nul
           audioTrackIndex: tracks.audio,
           subtitleTrackIndex: tracks.subtitle,
         })
-        push(`Faixas trocadas em ${formatClock(at)} · transcode reiniciado`)
-        await attach(res, at, { profile: s.profile, tracks })
+        push(`Faixas trocadas em ${formatClock(at)} · ${describeTracks(sessionTracks(res))} · transcode reiniciado`)
+        await attach(res, at, s.profile)
       } catch (e) {
         if (errorStatus(e) === 404) {
           setStatus('expired')

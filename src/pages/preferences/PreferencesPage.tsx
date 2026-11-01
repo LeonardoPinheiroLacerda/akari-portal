@@ -13,13 +13,22 @@ import { Segmented } from '@/components/ui/segmented'
 import { Select } from '@/components/ui/select'
 import { ErrorState, Loading } from '@/components/ui/states'
 import { Switch } from '@/components/ui/switch'
-import { ISO639, TMDB_LOCALES } from '@/features/item/labels'
+import { ISO639, ISO639_2, TMDB_LOCALES } from '@/features/item/labels'
 import { formatRelative, humanizeIsoDuration } from '@/lib/format'
 import { useDebounced } from '@/lib/useDebounced'
 import { cn } from '@/lib/utils'
 
-type Kind = 'path' | 'bytes' | 'duration' | 'enum' | 'secret' | 'locale' | 'lang' | 'bool' | 'text'
-type Meta = { label: string; hint: string; kind: Kind; width?: number; placeholder?: string; options?: string[] }
+type Kind = 'path' | 'bytes' | 'duration' | 'enum' | 'secret' | 'locale' | 'lang' | 'trackLang' | 'bool' | 'text'
+type Meta = {
+  label: string
+  hint: string
+  kind: Kind
+  width?: number
+  placeholder?: string
+  options?: string[]
+  /** Rótulo de cada opção do `enum`; sem ele, a opção mostra o próprio valor. */
+  optionLabels?: Record<string, string>
+}
 
 const META: Record<string, Meta> = {
   'cache.dir': {
@@ -40,6 +49,25 @@ const META: Record<string, Meta> = {
     hint: 'Método usado pelo FFmpeg no transcode durante a reprodução.',
     kind: 'enum',
     options: ['NONE', 'VIDEOTOOLBOX', 'NVENC', 'QSV', 'VAAPI'],
+  },
+  'playback.default.audio-language': {
+    label: 'Idioma do áudio padrão',
+    hint: 'Áudio escolhido quando a reprodução começa sem faixa pedida: a primeira faixa nesse idioma; sem nenhuma, a padrão do arquivo.',
+    kind: 'trackLang',
+    width: 260,
+  },
+  'playback.default.subtitle-language': {
+    label: 'Idioma da legenda padrão',
+    hint: 'Legenda escolhida quando a reprodução começa sem faixa pedida; sem faixa nesse idioma, começa sem legenda.',
+    kind: 'trackLang',
+    width: 260,
+  },
+  'playback.default.subtitle-forced': {
+    label: 'Tipo da legenda padrão',
+    hint: 'Completa ou forçada (só letreiros e músicas). Sem faixa desse tipo no idioma, usa a do outro tipo.',
+    kind: 'enum',
+    options: ['false', 'true'],
+    optionLabels: { false: 'Completa', true: 'Forçada' },
   },
   'playback.session.heartbeat-ttl': {
     label: 'Tempo da sessão sem sinal',
@@ -225,17 +253,20 @@ function SettingRow({ setting: s }: { setting: SettingResponse }) {
           aria-label={meta.label}
           value={value}
           onChange={setValue}
-          className="[&_button]:font-mono [&_button]:text-xs"
-          options={(meta.options ?? []).map((o) => ({ value: o, label: o }))}
+          className={cn(!meta.optionLabels && '[&_button]:font-mono [&_button]:text-xs')}
+          options={(meta.options ?? []).map((o) => ({ value: o, label: meta.optionLabels?.[o] ?? o }))}
         />
       )
       break
     case 'locale':
-    case 'lang': {
+    case 'lang':
+    case 'trackLang': {
       const opts =
         meta.kind === 'locale'
           ? TMDB_LOCALES.map(([v, l]) => ({ value: v, label: `${v} · ${l}` }))
-          : [{ value: '', label: 'Sem idioma (sem texto)' }, ...ISO639.map(([v, l]) => ({ value: v, label: `${v} · ${l}` }))]
+          : meta.kind === 'trackLang'
+            ? ISO639_2.map(([v, l]) => ({ value: v, label: `${v} · ${l}` }))
+            : [{ value: '', label: 'Sem idioma (sem texto)' }, ...ISO639.map(([v, l]) => ({ value: v, label: `${v} · ${l}` }))]
       if (value && !opts.some((o) => o.value === value)) opts.push({ value, label: value })
       control = (
         <div style={{ width: meta.width }} className="max-w-full">

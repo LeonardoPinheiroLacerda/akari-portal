@@ -26,6 +26,21 @@ import type { SessionId } from './sessionId';
 export interface PlaybackSessionResponse {
   sessionId: SessionId;
   /**
+     * Faixa de áudio ativa na sessão — posição (0-based) no array `audio` do
+     * `GET /v1/mediaprobe/files/{fileId}`. É a faixa pedida pelo cliente ou, quando o
+     * request não informou, a padrão das preferências.
+     * @minimum 0
+     */
+  audioTrackIndex: number;
+  /**
+     * Faixa de legenda ativa na sessão — posição (0-based) no array `subtitles` do
+     * `GET /v1/mediaprobe/files/{fileId}`; `null` = sem legenda. É a faixa pedida pelo
+     * cliente ou, quando o request não informou, a padrão das preferências.
+     * @minimum 0
+     * @nullable
+     */
+  subtitleTrackIndex?: number | null;
+  /**
      * URL (relativa ao host) da playlist `m3u8` da sessão — atalho para o endpoint
      * `GET /v1/playback/sessions/{sessionId}/playlist.m3u8`.
      */
