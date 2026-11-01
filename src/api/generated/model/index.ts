@@ -203,6 +203,7 @@ export * from './tmdbAnimeStateCreatedResponse';
 export * from './tmdbAnimeStateOkResponse';
 export * from './tmdbAnimeStateResponse';
 export * from './tmdbBindingDeletedResponse';
+export * from './tmdbBindingDetails';
 export * from './tmdbBindingRequest';
 export * from './tmdbBindingRequestBodyBody';
 export * from './tmdbFilePairingDeletedResponse';

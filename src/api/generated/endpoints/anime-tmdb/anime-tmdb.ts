@@ -83,7 +83,7 @@ export const getGetTmdbStateUrl = (anilistId: number,) => {
 }
 
 /**
- * @summary Estado atual do binding TMDB (binding + overrides)
+ * @summary Estado atual do binding TMDB (binding + overrides + dados do TMDB)
  */
 export const getTmdbState = async (anilistId: number, options?: Parameters<typeof http>[1]): Promise<TmdbAnimeStateOkResponse> => {
 
@@ -154,7 +154,7 @@ export function useGetTmdbState<TData = Awaited<ReturnType<typeof getTmdbState>>
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Estado atual do binding TMDB (binding + overrides)
+ * @summary Estado atual do binding TMDB (binding + overrides + dados do TMDB)
  */
 
 export function useGetTmdbState<TData = Awaited<ReturnType<typeof getTmdbState>>, TError = NotFoundResponse | InternalServerErrorResponse>(

@@ -47,8 +47,12 @@ sessão de reprodução em [`src/features/playback`](../../features/playback/REA
 
 ## TMDB (`TmdbTab`)
 
-- Mostra o vínculo atual (série ou filme, com pôster, datas e quantos overrides existem) ou o
-  convite para vincular.
+- Mostra o vínculo atual ou o convite para vincular. O card do vínculo mostra a ficha do próprio
+  TMDB (`details` do estado do vínculo): pôster principal, título e título original, estreia ou
+  lançamento, temporadas e episódios (série) ou duração (filme), status, nota, gêneros e sinopse.
+  Não aplica overrides nem cai nos dados da AniList, para que dê para conferir se o vínculo —
+  inclusive o automático da ingestão — aponta para o título certo. Quantos overrides existem
+  aparece no rodapé do card.
 - A busca no TMDB escolhe entre série e filme, usa o idioma padrão das preferências como idioma
   inicial e pagina os resultados.
 - "Remover vínculo" apaga o vínculo; os overrides caem em cascata. **Confirmado** (contrato,

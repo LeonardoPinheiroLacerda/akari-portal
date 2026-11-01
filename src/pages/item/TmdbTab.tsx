@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { bindTmdb, clearTmdbBinding } from '@/api/generated/endpoints/anime-tmdb/anime-tmdb'
 import { useSearchTmdbMovie, useSearchTmdbTv } from '@/api/generated/endpoints/tmdb-search/tmdb-search'
-import type { TmdbMediaType } from '@/api/generated/model'
+import type { TmdbAnimeStateResponse, TmdbMediaType } from '@/api/generated/model'
 import { toastError } from '@/api/errors'
 import { invalidate } from '@/api/query'
 import { Button } from '@/components/ui/button'
@@ -18,7 +18,7 @@ import { Thumb } from '@/components/ui/thumb'
 import { TMDB_LOCALES } from '@/features/item/labels'
 import type { ItemState } from '@/features/item/useItem'
 import { useSetting } from '@/features/settings/useSetting'
-import { formatDate, formatDateTime } from '@/lib/format'
+import { formatDate, formatDateTime, pluralize } from '@/lib/format'
 import { useDebounced } from '@/lib/useDebounced'
 import { cn } from '@/lib/utils'
 import type { ItemTab } from './ItemPage'
@@ -101,33 +101,7 @@ export function TmdbTab({ item, onGo }: { item: ItemState; onGo: (t: ItemTab) =>
               </Button>
             </div>
           )}
-          <div className="flex flex-wrap gap-5 px-5 py-[18px]">
-            <Thumb
-              src={b.overrides?.posterPreviewUrl ?? anime.data?.thumbnails?.large}
-              width={92}
-              rounded="rs"
-              className="border border-line"
-            />
-            <div className="flex min-w-[260px] flex-1 flex-col">
-              <KeyValue
-                labelWidth={140}
-                rows={[
-                  {
-                    label: 'tmdbId',
-                    mono: true,
-                    value: (
-                      <ExternalLink href={`https://www.themoviedb.org/${b.mediaType === 'TV' ? 'tv' : 'movie'}/${b.tmdbId}`}>
-                        {b.tmdbId}
-                      </ExternalLink>
-                    ),
-                  },
-                  { label: 'Tipo', value: b.mediaType === 'TV' ? 'TV · Série' : 'MOVIE · Filme', mono: true },
-                  { label: 'Título', value: b.overrides?.title ?? anime.data?.titles?.main },
-                  { label: 'Vinculado em', value: formatDateTime(b.createdAt), mono: true },
-                ]}
-              />
-            </div>
-          </div>
+          <BindingDetails state={b} />
         </Section>
       ) : (
         <div className="flex items-center gap-3 rounded-r border border-dashed border-line px-5 py-4 text-13 text-muted">
@@ -152,6 +126,55 @@ export function TmdbTab({ item, onGo }: { item: ItemState; onGo: (t: ItemTab) =>
   )
 }
 
+/** Ficha do próprio TMDB, sem overrides nem dados da AniList: serve para conferir se o vínculo aponta para o título certo. */
+function BindingDetails({ state: b }: { state: TmdbAnimeStateResponse }) {
+  const d = b.details
+  const isTv = b.mediaType === 'TV'
+  return (
+    <div className="flex flex-wrap gap-5 px-5 py-[18px]">
+      <Thumb src={d.posterUrl} width={92} rounded="rs" className="border border-line" />
+      <div className="flex min-w-[260px] flex-1 flex-col gap-3">
+        <KeyValue
+          labelWidth={140}
+          rows={[
+            {
+              label: 'tmdbId',
+              mono: true,
+              value: (
+                <ExternalLink href={`https://www.themoviedb.org/${isTv ? 'tv' : 'movie'}/${b.tmdbId}`}>{b.tmdbId}</ExternalLink>
+              ),
+            },
+            { label: 'Tipo', value: isTv ? 'TV · Série' : 'MOVIE · Filme', mono: true },
+            { label: 'Título', value: d.title },
+            { label: 'Título original', value: [d.originalTitle, d.originalLanguage].filter(Boolean).join(' · ') || '—' },
+            { label: isTv ? 'Estreia' : 'Lançamento', value: formatDate(d.releaseDate), mono: true },
+            isTv
+              ? {
+                  label: 'Temporadas',
+                  value:
+                    [
+                      d.numberOfSeasons != null && pluralize(d.numberOfSeasons, 'temporada', 'temporadas'),
+                      d.numberOfEpisodes != null && pluralize(d.numberOfEpisodes, 'episódio', 'episódios'),
+                    ]
+                      .filter(Boolean)
+                      .join(' · ') || '—',
+                }
+              : { label: 'Duração', value: d.runtime != null ? `${d.runtime} min` : '—' },
+            { label: 'Status', value: d.status },
+            {
+              label: 'Nota',
+              value: d.voteAverage != null ? `${d.voteAverage.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} / 10` : '—',
+              mono: true,
+            },
+            { label: 'Gêneros', value: d.genres?.length ? d.genres.join(', ') : '—' },
+            { label: 'Vinculado em', value: formatDateTime(b.createdAt), mono: true },
+          ]}
+        />
+        {d.overview && <p className="m-0 line-clamp-4 max-w-[820px] text-13 leading-[1.55] text-muted">{d.overview}</p>}
+      </div>
+    </div>
+  )
+}
 function TmdbSearch({
   anilistId,
   current,

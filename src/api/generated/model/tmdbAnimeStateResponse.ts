@@ -18,12 +18,13 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { TmdbBindingDetails } from './tmdbBindingDetails';
 import type { TmdbId } from './tmdbId';
 import type { TmdbMediaType } from './tmdbMediaType';
 import type { TmdbOverrides } from './tmdbOverrides';
 
 /**
- * Estado TMDB do anime (binding + overrides)
+ * Estado TMDB do anime (binding + overrides + dados do próprio TMDB)
  */
 export interface TmdbAnimeStateResponse {
   tmdbId?: TmdbId | null;
@@ -31,4 +32,9 @@ export interface TmdbAnimeStateResponse {
   /** @nullable */
   createdAt?: string | null;
   overrides?: TmdbOverrides | null;
+  /**
+     * Dados da série ou filme vinculado, como estão no TMDB — sem overrides aplicados, pra
+     * conferir se o binding aponta pro título certo. Lidos da ficha do TMDB (cache-first).
+     */
+  details: TmdbBindingDetails;
 }
