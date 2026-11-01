@@ -35,7 +35,9 @@ O mapa `META` dá a cada chave conhecida um rótulo, uma explicação e um tipo 
 Os idiomas de faixa usam o código de 3 letras porque o backend compara o valor, sem diferenciar
 maiúsculas, com a tag `language` das faixas do probe, que vem do arquivo (no Matroska, ISO
 639-2/B: `fre`, `ger`, `chi`). **Confirmado** (`playback/README.md` do backend, "Faixas padrão").
-Um valor fora da lista aparece como opção com o próprio código.
+Um valor fora da lista aparece como opção com o próprio código. A legenda tem também "Sem legenda"
+(valor vazio), que o backend trata como "começar sem legenda"; por isso, vazio nela não ganha o
+chip "Não configurado". **Confirmado** (contrato, `StartPlaybackSessionRequest.subtitleTrackIndex`).
 
 Uma chave fora do mapa aparece com a própria chave como rótulo e um campo de texto (ou senha, se
 for secreta).

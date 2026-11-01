@@ -47,9 +47,9 @@ export interface StartPlaybackSessionRequest {
      * `playback.default.subtitle-language`, forçada ou completa conforme
      * `playback.default.subtitle-forced` (forçada = flag `forced` do arquivo ou título com
      * `forced`, `forçada`, `forcada`, `signs` ou `songs`, sem diferenciar maiúsculas); sem
-     * faixa desse tipo, a primeira do idioma; sem faixa no idioma, reproduz sem legenda.
-     * Para
-     * reproduzir sem legenda, use `subtitleDisabled`.
+     * faixa desse tipo, a primeira do idioma; sem faixa no idioma, ou com
+     * `playback.default.subtitle-language` vazio, reproduz sem legenda. Para reproduzir sem
+     * legenda, use `subtitleDisabled`.
      * @minimum 0
      * @nullable
      */

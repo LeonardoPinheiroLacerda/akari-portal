@@ -30,14 +30,15 @@ export interface SwitchTracksRequest {
   positionSeconds: number;
   /**
      * Posição (0-based) da faixa no array `audio` do `GET /v1/mediaprobe/files/{fileId}` —
-     * **não** o campo `index` da faixa. Mesma semântica de `StartPlaybackSessionRequest`.
+     * **não** o campo `index` da faixa. Obrigatório aqui: a troca de faixas não usa as
+     * preferências `playback.default.*`.
      * @minimum 0
      */
   audioTrackIndex: number;
   /**
      * Posição (0-based) da faixa no array `subtitles` do `GET /v1/mediaprobe/files/{fileId}`
-     * — **não** o campo `index` da faixa. Ausente/`null` reproduz sem legenda. Mesma
-     * semântica de `StartPlaybackSessionRequest`.
+     * — **não** o campo `index` da faixa. Ausente/`null` reproduz sem legenda — diferente
+     * do `StartPlaybackSessionRequest`, aqui não há legenda padrão.
      * @minimum 0
      * @nullable
      */

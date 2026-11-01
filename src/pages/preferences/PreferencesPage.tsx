@@ -28,6 +28,8 @@ type Meta = {
   options?: string[]
   /** Rótulo de cada opção do `enum`; sem ele, a opção mostra o próprio valor. */
   optionLabels?: Record<string, string>
+  /** Rótulo da opção vazia do `trackLang`, quando vazio é um valor válido (não "não configurado"). */
+  emptyLabel?: string
 }
 
 const META: Record<string, Meta> = {
@@ -58,9 +60,10 @@ const META: Record<string, Meta> = {
   },
   'playback.default.subtitle-language': {
     label: 'Idioma da legenda padrão',
-    hint: 'Legenda escolhida quando a reprodução começa sem faixa pedida; sem faixa nesse idioma, começa sem legenda.',
+    hint: 'Legenda escolhida quando a reprodução começa sem faixa pedida; sem faixa nesse idioma, ou com "Sem legenda", começa sem legenda.',
     kind: 'trackLang',
     width: 260,
+    emptyLabel: 'Sem legenda',
   },
   'playback.default.subtitle-forced': {
     label: 'Tipo da legenda padrão',
@@ -195,7 +198,7 @@ function SettingRow({ setting: s }: { setting: SettingResponse }) {
   useEffect(() => setValue(s.secret ? '' : (s.value ?? '')), [s.value, s.secret])
 
   const dirty = s.secret ? value.length > 0 : value !== (s.value ?? '')
-  const empty = !s.configured
+  const empty = !s.configured && meta.emptyLabel == null
   const showChip = empty || s.secret
 
   const save = () =>
@@ -265,7 +268,10 @@ function SettingRow({ setting: s }: { setting: SettingResponse }) {
         meta.kind === 'locale'
           ? TMDB_LOCALES.map(([v, l]) => ({ value: v, label: `${v} · ${l}` }))
           : meta.kind === 'trackLang'
-            ? ISO639_2.map(([v, l]) => ({ value: v, label: `${v} · ${l}` }))
+            ? [
+                ...(meta.emptyLabel != null ? [{ value: '', label: meta.emptyLabel }] : []),
+                ...ISO639_2.map(([v, l]) => ({ value: v, label: `${v} · ${l}` })),
+              ]
             : [{ value: '', label: 'Sem idioma (sem texto)' }, ...ISO639.map(([v, l]) => ({ value: v, label: `${v} · ${l}` }))]
       if (value && !opts.some((o) => o.value === value)) opts.push({ value, label: value })
       control = (

@@ -195,6 +195,13 @@ function Player({ fileId, fileName, probe }: { fileId: number; fileName: string;
   const duration = probe.container.durationSeconds ?? 0
   const hbLeft = pb.expiresAt ? Math.max(0, Math.round((pb.expiresAt - now) / 1000)) : null
 
+  // Idioma vazio nas preferências = começar sem legenda.
+  const subDefault = !subLang
+    ? '?'
+    : !subLang.value
+      ? 'sem legenda'
+      : `${subLang.value}, ${subForced?.value === 'true' ? 'forçada' : 'completa'}`
+
   const start = () => pb.start(fileId, profile, startTracks).catch(() => undefined)
 
   return (
@@ -284,7 +291,7 @@ function Player({ fileId, fileName, probe }: { fileId: number; fileName: string;
                     : [
                         {
                           value: DEFAULT,
-                          label: `Padrão das preferências (${subLang?.value ?? '?'}, ${subForced?.value === 'true' ? 'forçada' : 'completa'})`,
+                          label: `Padrão das preferências (${subDefault})`,
                         },
                       ]),
                   { value: '', label: 'Sem legenda' },

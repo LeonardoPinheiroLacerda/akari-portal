@@ -198,9 +198,11 @@ export const getStartPlaybackSessionUrl = () => {
 }
 
 /**
- * Inicia o transcode da mídia (referenciada por `fileId`) com o perfil, faixa
- * de áudio e, opcionalmente, faixa de legenda escolhidos. Gera e devolve o `sessionId`
- * (UUID) que identifica a sessão, junto do endereço da playlist `m3u8`.
+ * Inicia o transcode da mídia (referenciada por `fileId`) com o perfil e as faixas de
+ * áudio e legenda escolhidos. Cada faixa não informada sai das preferências
+ * `playback.default.*`, de forma independente (ver `StartPlaybackSessionRequest`). Gera e
+ * devolve o `sessionId` (UUID) que identifica a sessão, junto do endereço da playlist
+ * `m3u8` e das faixas ativas (`audioTrackIndex`/`subtitleTrackIndex`).
  *
  * Responde `404` se o vídeo é de provider remoto e ainda não terminou de baixar no cache.
  * Responde `500` com `TRANSCODE_FAILED` se o `ffmpeg` sair com erro logo depois de subir,
