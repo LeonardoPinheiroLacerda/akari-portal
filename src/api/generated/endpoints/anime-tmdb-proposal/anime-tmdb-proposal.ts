@@ -35,7 +35,9 @@ import type {
   NotFoundResponse,
   ServiceUnavailableResponse,
   TmdbBindingProposalOkResponse,
-  TmdbBindingProposalRequestBodyBody
+  TmdbBindingProposalRequestBodyBody,
+  TmdbFilePairingProposalOkResponse,
+  TmdbFilePairingProposalRequestBodyBody
 } from '../../model';
 
 import { http } from '../../../http';
@@ -147,4 +149,122 @@ export const useProposeTmdbBinding = <TError = BadRequestResponse | NotFoundResp
         TContext
       > => {
       return useMutation(getProposeTmdbBindingMutationOptions(options), queryClient);
+    }
+    export const getProposeTmdbFilePairingUrl = () => {
+
+
+
+
+  return `/v1/metadata/tmdb/file-pairing-proposals`
+}
+
+/**
+ * Propõe a temporada/episódio do TMDB pra cada arquivo de vídeo da pasta do anime, sem
+ * gravar nada. O anime precisa estar vinculado à pasta e a uma série do TMDB. A
+ * `strategy` escolhe como a proposta é calculada (`ANIBRIDGE` quando ausente):
+ *
+ * - `ANIBRIDGE` — a mesma resolução do pairing automático da ingestão: o número do
+ *   episódio sai do nome do arquivo, e o anibridge (snapshot local) converte pra
+ *   temporada/episódio do TMDB — com fallback de numeração absoluta (offset calculado pela
+ *   cadeia de prequels) e de pasta com um único episódio. Só valem os mapeamentos do
+ *   anibridge que apontam pra série vinculada: se o binding foi feito pra outra série,
+ *   nada é proposto (`NO_MAPPING`). Cada episódio resolvido é confirmado no TMDB.
+ * - `CONTINUITY` — não consulta o anibridge: parte dos pairings já gravados na pasta e da
+ *   estrutura da série no TMDB, então funciona justamente quando o anibridge não mapeia o
+ *   anime. Cada arquivo sem par recebe o episódio seguinte ao do arquivo pareado anterior
+ *   (na ordem natural dos nomes); o arquivo recém-proposto vira a âncora do próximo. No fim
+ *   de uma temporada, segue no primeiro episódio da próxima temporada da série, pelo
+ *   número. A temporada 0 (especiais) é tratada como qualquer outra: uma âncora nela
+ *   continua dentro dela e, no fim, segue pra temporada 1; como vem antes de todas, nunca é
+ *   a próxima de outra temporada. Arquivo que já tem par é âncora e sai `PAIRED` com o
+ *   próprio par (`change` = `SAME`).
+ *
+ * A resposta traz todos os arquivos da pasta, na ordem natural dos nomes (a mesma da
+ * listagem de episódios), com o `status` de cada um, o par atual do arquivo
+ * (`currentSeasonNumber`/`currentEpisodeNumber`), a comparação da proposta com ele
+ * (`change`), quem já usa o episódio proposto (`usedByFileId`) e se a proposta deve vir
+ * marcada no portal (`selectedByDefault`). Pra gravar o que o admin revisou, o portal manda
+ * o `pairing` de cada arquivo em `PUT /v1/metadata/files/{fileId}/tmdb-pairing`.
+ *
+ * Responde `404` se o anime não existir ou não tiver binding TMDB, `400` se o binding for
+ * de filme (filme não tem pairing de episódio), e `502`/`503` se a estrutura da série não
+ * puder ser lida do TMDB na `CONTINUITY` (na `ANIBRIDGE`, falha do TMDB vira
+ * `NOT_FOUND_IN_TMDB` no arquivo).
+ * @summary Propõe o pairing TMDB dos arquivos de um anime (anibridge ou continuidade)
+ */
+export const proposeTmdbFilePairing = async (tmdbFilePairingProposalRequestBodyBody: TmdbFilePairingProposalRequestBodyBody, options?: Parameters<typeof http>[1]): Promise<TmdbFilePairingProposalOkResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return http<TmdbFilePairingProposalOkResponse>(getProposeTmdbFilePairingUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(tmdbFilePairingProposalRequestBodyBody)
+  }
+);}
+
+
+
+
+
+export const getProposeTmdbFilePairingMutationKey = () => ['proposeTmdbFilePairing'] as const;
+
+export const getProposeTmdbFilePairingMutationOptions = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | BadGatewayResponse | ServiceUnavailableResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof proposeTmdbFilePairing>>, TError,ProposeTmdbFilePairingMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof proposeTmdbFilePairing>>, TError,ProposeTmdbFilePairingMutationVariables, TContext> => {
+
+const mutationKey = getProposeTmdbFilePairingMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof proposeTmdbFilePairing>>, ProposeTmdbFilePairingMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  proposeTmdbFilePairing(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ProposeTmdbFilePairingMutationResult = NonNullable<Awaited<ReturnType<typeof proposeTmdbFilePairing>>>
+    export type ProposeTmdbFilePairingMutationBody = TmdbFilePairingProposalRequestBodyBody
+    export type ProposeTmdbFilePairingMutationError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | BadGatewayResponse | ServiceUnavailableResponse
+    export type ProposeTmdbFilePairingMutationVariables = {data: TmdbFilePairingProposalRequestBodyBody}
+
+    /**
+ * @summary Propõe o pairing TMDB dos arquivos de um anime (anibridge ou continuidade)
+ */
+export const useProposeTmdbFilePairing = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse | BadGatewayResponse | ServiceUnavailableResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof proposeTmdbFilePairing>>, TError,ProposeTmdbFilePairingMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof proposeTmdbFilePairing>>,
+        TError,
+        ProposeTmdbFilePairingMutationVariables,
+        TContext
+      > => {
+      return useMutation(getProposeTmdbFilePairingMutationOptions(options), queryClient);
     }

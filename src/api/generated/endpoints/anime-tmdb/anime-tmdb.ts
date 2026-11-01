@@ -271,7 +271,13 @@ export const useBindTmdb = <TError = BadRequestResponse | NotFoundResponse | Int
 }
 
 /**
- * @summary Remove binding TMDB (overrides caem por cascata)
+ * Remove o binding TMDB do anime e limpa junto tudo que dependia dele: os overrides
+ * (título, sinopse, pôster, backdrop e logo) e os pairings TMDB de todos os arquivos da
+ * pasta do anime — eles apontam pra temporadas/episódios do título desvinculado e ficariam
+ * errados num novo binding. Um novo `POST .../tmdb/binding` volta a pré-preencher backdrop e
+ * logo; os pairings precisam ser refeitos (manualmente, pela proposta de pairing ou numa
+ * nova ingestão).
+ * @summary Remove binding TMDB, junto com os overrides e os pairings dos episódios
  */
 export const clearTmdbBinding = async (anilistId: number, options?: Parameters<typeof http>[1]): Promise<TmdbBindingDeletedResponse> => {
 
@@ -323,7 +329,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type ClearTmdbBindingMutationVariables = {anilistId: number}
 
     /**
- * @summary Remove binding TMDB (overrides caem por cascata)
+ * @summary Remove binding TMDB, junto com os overrides e os pairings dos episódios
  */
 export const useClearTmdbBinding = <TError = NotFoundResponse | InternalServerErrorResponse,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clearTmdbBinding>>, TError,ClearTmdbBindingMutationVariables, TContext>, request?: SecondParameter<typeof http>}

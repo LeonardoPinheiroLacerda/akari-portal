@@ -5,7 +5,7 @@ import { bindTmdb, clearTmdbBinding } from '@/api/generated/endpoints/anime-tmdb
 import { getProposeTmdbBindingUrl, proposeTmdbBinding } from '@/api/generated/endpoints/anime-tmdb-proposal/anime-tmdb-proposal'
 import { useSearchTmdbMovie, useSearchTmdbTv } from '@/api/generated/endpoints/tmdb-search/tmdb-search'
 import type { TmdbBindingDetails, TmdbMediaType } from '@/api/generated/model'
-import { errorStatus, toastError } from '@/api/errors'
+import { errorMessage, errorStatus, toastError } from '@/api/errors'
 import { invalidate } from '@/api/query'
 import { Button } from '@/components/ui/button'
 import { Chip } from '@/components/ui/chip'
@@ -93,7 +93,7 @@ export function TmdbTab({ item, onGo }: { item: ItemState; onGo: (t: ItemTab) =>
             <div className="flex flex-wrap items-center gap-3 border-b border-line bg-[color-mix(in_oklch,var(--danger)_10%,transparent)] px-5 py-3 text-13">
               <Icon name="link_off" size={20} className="text-danger" />
               <span className="min-w-[220px] flex-1">
-                Remover o vínculo apaga também os {ovCount} overrides. O pareamento dos arquivos continua salvo.
+                Remover o vínculo apaga também os {ovCount} overrides e o pareamento de episódio de todos os arquivos da pasta.
               </span>
               <Button size="sm" onClick={() => setConfirmRemove(false)}>
                 Cancelar
@@ -117,6 +117,7 @@ export function TmdbTab({ item, onGo }: { item: ItemState; onGo: (t: ItemTab) =>
       {(b?.tmdbId == null || searchOpen) && (
         <TmdbSearch
           anilistId={anilistId}
+          animeFormat={anime.data?.format}
           current={b?.tmdbId != null ? { tmdbId: b.tmdbId, mediaType: b.mediaType! } : null}
           initialQuery={anime.data?.titles?.english ?? anime.data?.titles?.main ?? folder.data?.name ?? ''}
           initialType={folder.data?.mediaType === 'MOVIE' || anime.data?.format === 'MOVIE' ? 'MOVIE' : 'TV'}
@@ -192,13 +193,18 @@ function TmdbDetails({
  * Proposta de vínculo do anibridge para o anime (`POST /v1/metadata/tmdb/binding-proposals`), com a ficha do título
  * proposto. A chamada não grava nada, por isso é lida como consulta.
  */
+/** Formatos da AniList que o TMDB costuma guardar como episódios especiais (temporada 0) da série principal. */
+const SPECIAL_FORMATS = ['SPECIAL', 'OVA']
+
 function TmdbProposal({
   anilistId,
+  animeFormat,
   current,
   pending,
   onPick,
 }: {
   anilistId: number
+  animeFormat?: string | null
   current: { tmdbId: number; mediaType: TmdbMediaType } | null
   pending: number | null
   onPick: (tmdbId: number, mediaType: TmdbMediaType, name?: string | null) => void
@@ -209,15 +215,17 @@ function TmdbProposal({
   })
   const p = proposal.data
   const isCurrent = p != null && current?.tmdbId === p.tmdbId && current.mediaType === p.mediaType
+  const none = proposal.isError && errorStatus(proposal.error) === 404
 
   return (
     <div className="border-b border-line">
       <div className="flex flex-wrap items-center gap-2.5 px-5 pt-3.5">
         <span className="font-semibold">Proposta do anibridge</span>
         <span className="min-w-[220px] flex-1 text-sm text-muted">
-          O mesmo critério do vínculo automático da ingestão. Confira a ficha — o anibridge pode apontar para um título
-          dessincronizado do TMDB.
+          {!none &&
+            'O mesmo critério do vínculo automático da ingestão. Confira a ficha — o anibridge pode apontar para um título dessincronizado do TMDB.'}
         </span>
+        {none && <Chip>Sem proposta</Chip>}
         {p &&
           (isCurrent ? (
             <Chip tone="ok">Vínculo atual</Chip>
@@ -234,14 +242,21 @@ function TmdbProposal({
           ))}
       </div>
       {proposal.isLoading && <Loading label="Consultando o anibridge…" />}
-      {proposal.isError &&
-        (errorStatus(proposal.error) === 404 ? (
-          <div className="px-5 py-3.5 text-13 text-muted">
-            O anibridge não tem proposta para este anime (ou o título proposto não existe mais no TMDB). Busque abaixo.
+      {none && (
+        <div className="flex items-start gap-3 px-5 pb-4 pt-3 text-13 leading-normal">
+          <Icon name="search_off" size={20} className="mt-px text-muted" />
+          <div className="flex flex-col gap-1">
+            {/* A mensagem do backend diz o motivo: sem mapeamento no anibridge, anime fora da AniList ou título removido do TMDB. */}
+            <span>{errorMessage(proposal.error)}.</span>
+            <span className="text-muted">
+              Busque a série ou o filme no TMDB abaixo.
+              {SPECIAL_FORMATS.includes(animeFormat ?? '') &&
+                ' Especiais e OVAs costumam estar no TMDB como episódios da temporada 0 (Specials) da série principal — busque pelo nome da série.'}
+            </span>
           </div>
-        ) : (
-          <ErrorState error={proposal.error} onRetry={() => proposal.refetch()} />
-        ))}
+        </div>
+      )}
+      {proposal.isError && !none && <ErrorState error={proposal.error} onRetry={() => proposal.refetch()} />}
       {p && <TmdbDetails tmdbId={p.tmdbId} mediaType={p.mediaType} details={p.details} />}
     </div>
   )
@@ -249,6 +264,7 @@ function TmdbProposal({
 
 function TmdbSearch({
   anilistId,
+  animeFormat,
   current,
   initialQuery,
   initialType,
@@ -256,6 +272,7 @@ function TmdbSearch({
   onBound,
 }: {
   anilistId: number
+  animeFormat?: string | null
   current: { tmdbId: number; mediaType: TmdbMediaType } | null
   initialQuery: string
   initialType: TmdbMediaType
@@ -338,7 +355,7 @@ function TmdbSearch({
         )
       }
     >
-      <TmdbProposal anilistId={anilistId} current={current} pending={pending} onPick={pick} />
+      <TmdbProposal anilistId={anilistId} animeFormat={animeFormat} current={current} pending={pending} onPick={pick} />
       <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-5 py-3">
         <Segmented
           size="md"
@@ -425,7 +442,7 @@ function TmdbSearch({
       )}
       {current && (
         <div className="bg-[var(--warn-bg)] px-5 py-2.5 text-sm text-[var(--warn-fg)]">
-          Trocar o vínculo remove os overrides atuais (caem em cascata).
+          Trocar o vínculo remove os overrides atuais e o pareamento de episódio dos arquivos, que precisam ser refeitos.
         </div>
       )}
     </Section>

@@ -2,16 +2,16 @@
 
 Tela **Item do catálogo** (`/catalogo/:folderId/:aba`): a curadoria de uma pasta e do anime
 vinculado a ela, em cinco abas. A lógica compartilhada entre as abas (estado do item, textos,
-auto-pair, árvore da franquia) fica em [`src/features/item`](../../features/item/README.md), e a
+ordenação dos arquivos, árvore da franquia) fica em [`src/features/item`](../../features/item/README.md), e a
 sessão de reprodução em [`src/features/playback`](../../features/playback/README.md).
 
 | Arquivo                                | Papel                                                             |
 | -------------------------------------- | ----------------------------------------------------------------- |
 | [`ItemPage.tsx`](ItemPage.tsx)         | Cabeçalho, status de revisão, abas e as travas entre elas.        |
 | [`AnilistTab.tsx`](AnilistTab.tsx)     | Vínculo com a AniList, metadata, início da franquia e relações.   |
-| [`TmdbTab.tsx`](TmdbTab.tsx)           | Vínculo com uma série ou filme do TMDB.                           |
+| [`TmdbTab.tsx`](TmdbTab.tsx)           | Vínculo com uma série ou filme do TMDB e a proposta do anibridge. |
 | [`OverridesTab.tsx`](OverridesTab.tsx) | Overrides de título, sinopse, pôster, backdrop e logo.            |
-| [`PairingTab.tsx`](PairingTab.tsx)     | Pareamento de cada arquivo com um episódio do TMDB e o auto-pair. |
+| [`PairingTab.tsx`](PairingTab.tsx)     | Pareamento de cada arquivo com um episódio e as propostas.        |
 | [`PlaybackTab.tsx`](PlaybackTab.tsx)   | Disponibilidade do arquivo e o teste de reprodução.               |
 
 ## Página (`ItemPage`)
@@ -59,13 +59,15 @@ sessão de reprodução em [`src/features/playback`](../../features/playback/REA
   (`POST /v1/metadata/tmdb/binding-proposals`): o título que o anibridge propõe para o anime, com a
   mesma ficha do card do vínculo, e "Vincular proposta". É o mesmo critério do vínculo automático
   da ingestão. A chamada não grava nada, então o portal a lê como consulta. Se a proposta já é o
-  vínculo atual, aparece "Vínculo atual" no lugar do botão; sem mapeamento no anibridge (`404`), um
-  aviso, e a busca manual logo abaixo segue disponível. **Confirmado** (contrato,
-  `proposeTmdbBinding`).
+  vínculo atual, aparece "Vínculo atual" no lugar do botão. Sem proposta (`404`), o bloco mostra o
+  chip "Sem proposta" e a mensagem do backend, que diz o motivo (sem mapeamento no anibridge, anime
+  fora da AniList ou título removido do TMDB), e manda para a busca manual logo abaixo; se o anime é
+  `SPECIAL` ou `OVA` na AniList, acrescenta que o TMDB costuma guardá-los como episódios da
+  temporada 0 da série principal. **Confirmado** (contrato, `proposeTmdbBinding`).
 - A busca no TMDB escolhe entre série e filme, usa o idioma padrão das preferências como idioma
   inicial e pagina os resultados.
-- "Remover vínculo" apaga o vínculo; os overrides caem em cascata. **Confirmado** (contrato,
-  `clearTmdbBinding`).
+- "Remover vínculo" apaga o vínculo, e o backend apaga junto os overrides e o pareamento de
+  episódio de todos os arquivos da pasta. **Confirmado** (contrato, `clearTmdbBinding`).
 
 ## Overrides (`OverridesTab`)
 
@@ -93,8 +95,26 @@ sessão de reprodução em [`src/features/playback`](../../features/playback/REA
 - Salvar grava o par com uma cópia dos dados do episódio (nome, sinopse, data, duração, nota,
   tipo); "Remover pareamento" apaga o par (`DELETE`), que é diferente de gravar campos `null`.
   **Confirmado** (contrato, operações de `tmdb-pairing`).
-- **Auto-pair por continuidade** abre a proposta de `autoPair`; "Aplicar" grava os pares marcados
-  um por um. Se um falhar no meio, os anteriores ficam salvos e o aviso diz quantos.
+- **Propostas de pareamento** (`POST /v1/metadata/tmdb/file-pairing-proposals`): os botões
+  "Proposta do anibridge" e "Auto-pair por continuidade" abrem o mesmo painel com a `strategy`
+  `ANIBRIDGE` ou `CONTINUITY`. A primeira é o critério do pareamento automático da ingestão; a
+  segunda dá a cada arquivo sem par o episódio seguinte ao do arquivo pareado anterior e não
+  depende do anibridge. Toda a regra vem do backend — episódio proposto, `status` de cada arquivo,
+  comparação com o par atual (`change`), episódio já usado por outro arquivo (`usedByFileId`),
+  âncora da continuidade (`basedOnFileId`) e pré-seleção (`selectedByDefault`); o painel só
+  exibe, na ordem que o backend devolve. Proposta igual ao par atual não pode ser marcada;
+  proposta que troca um par existente aparece como "substitui SxxEyy". A chamada não grava nada,
+  então o portal a lê como consulta, sempre recalculada ao abrir o painel. **Confirmado**
+  (contrato, `proposeTmdbFilePairing`).
+- "Aplicar" grava o `pairing` pronto de cada arquivo marcado, com o `PUT` de `tmdb-pairing`, um por
+  um. Se um falhar no meio, os anteriores ficam salvos e o aviso diz quantos. **Aceito**
+  (confirmado pelo mantenedor): o backend não terá gravação em lote.
+- Sem proposta para a pasta inteira — na `ANIBRIDGE`, o anibridge sem mapeamento (`NO_MAPPING`)
+  ou com mapeamento conflitante (`CONFLICTING_MAPPING`); na `CONTINUITY`, nenhum arquivo pareado
+  como ponto de partida (`NO_ANCHOR`); ou um `404`/`400` do backend —, o painel mostra o chip "Sem
+  proposta", o motivo, o próximo passo e só "Fechar". Na `ANIBRIDGE`, se o anime é `SPECIAL` ou
+  `OVA` na AniList, acrescenta que esses episódios costumam estar na temporada 0 da série. Quando só
+  parte dos arquivos fica sem proposta, a lista aparece com o motivo de cada um.
 
 ## Reprodução (`PlaybackTab`)
 
@@ -125,7 +145,6 @@ Pela política geral de regras de negócio no cliente de [`ARQUITETURA_DO_SISTEM
 
 - **Trocar vínculo** (AniList e TMDB) é feito em duas chamadas: apaga o vínculo atual e cria o
   novo, porque o backend recusa um segundo vínculo. Se a segunda falhar, o item fica sem vínculo —
-  e, no TMDB, os overrides já caíram junto com o vínculo antigo.
-- **Aplicar o auto-pair** grava um par por requisição, sem operação em lote.
+  e, no TMDB, os overrides e os pareamentos já caíram junto com o vínculo antigo.
 - **Legenda selecionável ou queimada** é deduzida no portal pelo codec, repetindo a regra do
   backend.

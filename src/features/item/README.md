@@ -1,15 +1,14 @@
 # src/features/item
 
 Lógica do item do catálogo (a pasta com seu anime) compartilhada entre as abas da curadoria em
-[`src/pages/item`](../../pages/item): o estado consolidado do item, os textos dos enums e as duas
-regras calculadas no portal — a proposta de auto-pair de episódios e a árvore de relações da
-franquia.
+[`src/pages/item`](../../pages/item): o estado consolidado do item, os textos dos enums, a ordenação
+dos arquivos e a regra calculada no portal — a árvore de relações da franquia.
 
 | Arquivo                                | Papel                                                                                   |
 | -------------------------------------- | --------------------------------------------------------------------------------------- |
 | [`useItem.ts`](useItem.ts)             | Estado consolidado do item: pasta → anime → vínculo TMDB.                               |
 | [`labels.ts`](labels.ts)               | Textos dos enums (revisão, início da franquia, relações, estações) e listas de idiomas. |
-| [`autoPair.ts`](autoPair.ts)           | Proposta de pareamento de arquivos com episódios por continuidade.                      |
+| [`files.ts`](files.ts)                 | `byName`: ordena arquivos de vídeo pelo nome, com trechos numéricos como número.        |
 | [`relationsTree.ts`](relationsTree.ts) | Raiz da franquia e a árvore indentada de relações.                                      |
 
 ## Estado do item (`useItem`)
@@ -43,22 +42,6 @@ para travar as abas que dependem de um vínculo anterior.
   entra na lista quando for preciso.
 - `ISO639_2` — idiomas das preferências de faixa padrão da reprodução, no código de 3 letras da tag
   `language` das faixas (ISO 639-2/B, como o Matroska grava). Também é uma seleção dos mais comuns.
-
-## Auto-pair (`autoPair.ts`)
-
-`proposeAutoPair(arquivos, schema)` monta, no portal, a proposta exibida no painel de auto-pair da
-aba de pareamento; nada é gravado aqui — a aba salva os pares que o usuário marcar.
-
-- Agrupa os arquivos por diretório e ordena por nome (com ordenação numérica).
-- Cada arquivo sem par recebe o episódio seguinte ao do arquivo pareado anterior na mesma pasta;
-  ao fim de uma temporada, segue no E01 da próxima (`nextEpisode`). S00 (especiais) não serve de
-  ponto de partida.
-- Cada linha sai com um status: `sequence`, `new-season`, `used` (o episódio já está em outro
-  arquivo; desmarcado por padrão) ou `end` (não há episódio seguinte).
-
-**Backlog real** (confirmado pelo mantenedor, pela política geral de regras de negócio no cliente
-de [`ARQUITETURA_DO_SISTEMA.md`](../../../docs/ARQUITETURA_DO_SISTEMA.md#regras-arquiteturais)): a proposta deveria vir do
-backend.
 
 ## Árvore da franquia (`relationsTree.ts`)
 

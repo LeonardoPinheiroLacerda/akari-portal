@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import {
@@ -5,14 +6,20 @@ import {
   updateTmdbFilePairing,
   useGetTmdbFilePairingSchema,
 } from '@/api/generated/endpoints/anime-tmdb-file-pairing/anime-tmdb-file-pairing'
+import {
+  getProposeTmdbFilePairingUrl,
+  proposeTmdbFilePairing,
+} from '@/api/generated/endpoints/anime-tmdb-proposal/anime-tmdb-proposal'
 import { useListVideoFiles } from '@/api/generated/endpoints/video-file/video-file'
 import type {
+  TmdbFilePairingProposalStatus,
+  TmdbFilePairingStrategy,
   TmdbFilePairingRequest,
   TmdbFilePairingSchemaEpisode,
   TmdbFilePairingSchemaSeason,
   VideoFileResponse,
 } from '@/api/generated/model'
-import { toastError } from '@/api/errors'
+import { errorMessage, errorStatus, toastError } from '@/api/errors'
 import { invalidate } from '@/api/query'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -24,7 +31,7 @@ import { Segmented } from '@/components/ui/segmented'
 import { EmptyState, ErrorState, Loading } from '@/components/ui/states'
 import { Switch } from '@/components/ui/switch'
 import { Thumb } from '@/components/ui/thumb'
-import { byName, proposeAutoPair, type AutoPairRow } from '@/features/item/autoPair'
+import { byName } from '@/features/item/files'
 import type { ItemState } from '@/features/item/useItem'
 import { episodeCode, formatDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -80,7 +87,8 @@ export function PairingTab({ item, folderId }: { item: ItemState; folderId: numb
   const [filter, setFilter] = useState<Filter>('all')
   // Arquivo aberto no painel lateral; null = painel fechado.
   const [fileId, setFileId] = useState<number | null>(null)
-  const [autoOpen, setAutoOpen] = useState(false)
+  // Estratégia da proposta aberta; null = painel fechado.
+  const [proposal, setProposal] = useState<TmdbFilePairingStrategy | null>(null)
   // Temporada e rolagem da última escolha de episódio: o painel reabre nelas (vale entre arquivos).
   const lastPick = useRef<LastPick | null>(null)
 
@@ -124,19 +132,35 @@ export function PairingTab({ item, folderId }: { item: ItemState; folderId: numb
           <Progress value={pct} className="flex-1" />
           <span className="font-mono text-sm text-muted">{pct}%</span>
         </div>
-        <Button size="sm" className={cn(autoOpen && 'border-accent bg-tint')} onClick={() => setAutoOpen((v) => !v)}>
+        <Button
+          size="sm"
+          className={cn(proposal === 'ANIBRIDGE' && 'border-accent bg-tint')}
+          onClick={() => setProposal((v) => (v === 'ANIBRIDGE' ? null : 'ANIBRIDGE'))}
+        >
+          <Icon name="hub" size={18} className="text-accent" />
+          Proposta do anibridge
+        </Button>
+        <Button
+          size="sm"
+          className={cn(proposal === 'CONTINUITY' && 'border-accent bg-tint')}
+          onClick={() => setProposal((v) => (v === 'CONTINUITY' ? null : 'CONTINUITY'))}
+        >
           <Icon name="auto_mode" size={18} className="text-accent" />
           Auto-pair por continuidade
         </Button>
       </section>
 
-      {autoOpen && schemaQ.data && (
-        <AutoPairPanel
-          rows={proposeAutoPair(files, schemaQ.data)}
-          onClose={() => setAutoOpen(false)}
+      {proposal && (
+        <PairingProposalPanel
+          key={proposal}
+          anilistId={anilistId}
+          strategy={proposal}
+          animeFormat={item.anime.data?.format}
+          tmdbId={item.tmdb.data?.tmdbId}
+          onClose={() => setProposal(null)}
           onApplied={async () => {
             await refresh()
-            setAutoOpen(false)
+            setProposal(null)
           }}
         />
       )}
@@ -535,33 +559,102 @@ function PairingPanel({
   )
 }
 
-const STATUS: Record<AutoPairRow['status'], { label: (r: AutoPairRow) => string; tone: Tone }> = {
-  sequence: { label: () => 'sequência', tone: 'ok' },
-  'new-season': { label: () => 'nova temporada', tone: 'info' },
-  used: { label: (r) => `já usado por ${r.usedBy}`, tone: 'warn' },
-  end: { label: () => 'fim da série', tone: 'neutral' },
+type Strategy = TmdbFilePairingStrategy
+
+const STRATEGY_TEXT: Record<Strategy, { title: string; description: string }> = {
+  ANIBRIDGE: {
+    title: 'Proposta do anibridge',
+    description:
+      'O mesmo critério do pareamento automático da ingestão: o número do episódio sai do nome do arquivo e o anibridge o converte para temporada e episódio da série vinculada. Confira antes de aplicar — o anibridge pode estar dessincronizado do TMDB.',
+  },
+  CONTINUITY: {
+    title: 'Auto-pair por continuidade',
+    description:
+      'Cada arquivo sem par recebe o episódio seguinte ao do arquivo pareado anterior, em ordem de nome, pela estrutura da série no TMDB. Não depende do anibridge.',
+  },
 }
 
-function AutoPairPanel({
-  rows,
+const PROPOSAL_STATUS: Record<TmdbFilePairingProposalStatus, { label: string; tone: Tone }> = {
+  PAIRED: { label: 'proposto', tone: 'ok' },
+  NO_EPISODE_NUMBER: { label: 'sem número de episódio no nome', tone: 'neutral' },
+  NOT_MAPPED: { label: 'fora do mapeamento do anibridge', tone: 'warn' },
+  AMBIGUOUS_ABSOLUTE_NUMBERING: { label: 'numeração absoluta ambígua', tone: 'warn' },
+  NOT_FOUND_IN_TMDB: { label: 'episódio não existe no TMDB', tone: 'err' },
+  NO_MAPPING: { label: 'sem mapeamento para a série', tone: 'warn' },
+  CONFLICTING_MAPPING: { label: 'mapeamento conflitante', tone: 'err' },
+  NO_ANCHOR: { label: 'sem arquivo pareado antes', tone: 'neutral' },
+  END_OF_SERIES: { label: 'fim da série', tone: 'neutral' },
+  EPISODE_IN_USE: { label: 'episódio já usado', tone: 'warn' },
+}
+
+/** Status que valem para a pasta inteira (o backend os repete em todos os arquivos), com o motivo para a pasta. */
+const WHOLE_FOLDER: Partial<Record<TmdbFilePairingProposalStatus, (tmdbId?: number | null) => string>> = {
+  NO_MAPPING: (tmdbId) => `O anibridge não tem mapeamento deste anime para a série vinculada (tv/${tmdbId ?? '?'}).`,
+  CONFLICTING_MAPPING: (tmdbId) =>
+    `O mapeamento do anibridge para a série vinculada (tv/${tmdbId ?? '?'}) tem temporadas conflitantes e não é usado.`,
+  NO_ANCHOR: () => 'Nenhum arquivo da pasta está pareado: a continuidade precisa de um arquivo pareado como ponto de partida.',
+}
+
+/** Formatos da AniList que o TMDB costuma guardar como episódios especiais (temporada 0) da série principal. */
+const SPECIAL_FORMATS = ['SPECIAL', 'OVA']
+
+/**
+ * Proposta de pareamento dos arquivos da pasta (`POST /v1/metadata/tmdb/file-pairing-proposals`), pela estratégia
+ * escolhida. Toda a regra — episódio proposto, comparação com o par atual, episódio já usado e pré-seleção — vem do
+ * backend; o painel só exibe e grava, com o `PUT` de `tmdb-pairing`, o `pairing` pronto de cada arquivo marcado.
+ */
+function PairingProposalPanel({
+  anilistId,
+  strategy,
+  animeFormat,
+  tmdbId,
   onClose,
   onApplied,
 }: {
-  rows: AutoPairRow[]
+  anilistId: number
+  strategy: Strategy
+  animeFormat?: string | null
+  tmdbId?: number | null
   onClose: () => void
   onApplied: () => Promise<void>
 }) {
-  const [checked, setChecked] = useState<Set<number>>(() => new Set(rows.filter((r) => r.selectable).map((r) => r.file.id)))
+  // A chamada não grava nada, por isso é lida como consulta; staleTime 0: a proposta depende dos pares gravados.
+  const proposal = useQuery({
+    queryKey: [getProposeTmdbFilePairingUrl(), anilistId, strategy],
+    queryFn: ({ signal }) => proposeTmdbFilePairing({ anilistId, strategy }, { signal }),
+    staleTime: 0,
+  })
+  const rows = useMemo(() => proposal.data?.files ?? [], [proposal.data])
+  const nameOf = useMemo(() => new Map(rows.map((r) => [r.fileId, r.fileName])), [rows])
+  const [checked, setChecked] = useState<Set<number> | null>(null)
+  const marked = checked ?? new Set(rows.filter((r) => r.selectedByDefault).map((r) => r.fileId))
   const [applying, setApplying] = useState(false)
-  const count = rows.filter((r) => checked.has(r.file.id) && r.target).length
+  const toApply = rows.filter((r) => marked.has(r.fileId) && r.pairing)
+  const proposable = rows.filter((r) => r.pairing && r.change !== 'SAME').length
+
+  // Sem proposta para nenhum arquivo: motivo da pasta, ou o 404/400 do backend (anime sem vínculo, vínculo de filme).
+  const errStatus = proposal.isError ? errorStatus(proposal.error) : undefined
+  const folderStatus = rows.length > 0 && rows.every((r) => r.status === rows[0].status) ? rows[0].status : null
+  const noneReason =
+    errStatus === 404 || errStatus === 400
+      ? `${errorMessage(proposal.error)}.`
+      : folderStatus
+        ? (WHOLE_FOLDER[folderStatus]?.(tmdbId) ?? null)
+        : null
+  const nextStep =
+    strategy === 'CONTINUITY'
+      ? 'Pareie o primeiro arquivo na lista abaixo e proponha de novo.'
+      : 'Pareie os episódios na lista abaixo, ou pareie o primeiro e use o auto-pair por continuidade. Se o vínculo TMDB estiver errado, troque-o na aba TMDB.' +
+        (SPECIAL_FORMATS.includes(animeFormat ?? '')
+          ? ' Especiais e OVAs costumam estar na temporada 0 (Specials) da série — escolha essa temporada ao parear.'
+          : '')
 
   const apply = async () => {
     setApplying(true)
     let ok = 0
     try {
-      for (const r of rows) {
-        if (!checked.has(r.file.id) || !r.target) continue
-        await updateTmdbFilePairing(r.file.id, requestFor(r.target.ep, r.target.season, true))
+      for (const r of toApply) {
+        await updateTmdbFilePairing(r.fileId, r.pairing!)
         ok++
       }
       toast.success(`${ok} ${ok === 1 ? 'arquivo pareado' : 'arquivos pareados'}`)
@@ -578,77 +671,100 @@ function AutoPairPanel({
     <section className="overflow-hidden rounded-r border border-accent bg-panel">
       <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-5 py-3.5">
         <div className="flex min-w-[260px] flex-1 flex-col gap-[3px]">
-          <h3 className="m-0 text-15 font-semibold">Proposta de auto-pair</h3>
-          <span className="text-sm leading-[1.45] text-muted [text-wrap:pretty]">
-            Cada arquivo sem par recebe o episódio seguinte ao do arquivo anterior na mesma pasta, em ordem de nome. Ao fim de uma
-            temporada, continua no E01 da próxima. Especiais (S00) não entram na sequência.
-          </span>
+          <h3 className="m-0 text-15 font-semibold">{STRATEGY_TEXT[strategy].title}</h3>
+          {!noneReason && (
+            <span className="text-sm leading-[1.45] text-muted [text-wrap:pretty]">{STRATEGY_TEXT[strategy].description}</span>
+          )}
         </div>
-        <span className="text-sm text-muted">
-          {rows.length} {rows.length === 1 ? 'arquivo' : 'arquivos'} na proposta · {count} marcados
-        </span>
+        {noneReason && <Chip>Sem proposta</Chip>}
+        {proposal.data && !noneReason && (
+          <span className="text-sm text-muted">
+            {proposable} {proposable === 1 ? 'proposta nova' : 'propostas novas'} · {toApply.length} marcados
+          </span>
+        )}
       </div>
-      {rows.length === 0 && (
-        <div className="px-5 py-[18px] text-13 text-muted">
-          Nenhum arquivo sem par vem depois de um arquivo pareado. Pareie manualmente o primeiro episódio da sequência e tente de
-          novo.
+      {proposal.isLoading && <Loading label="Calculando a proposta…" />}
+      {proposal.isError && !noneReason && <ErrorState error={proposal.error} onRetry={() => proposal.refetch()} />}
+      {noneReason ? (
+        <div className="flex items-start gap-3 border-b border-line px-5 py-4 text-13 leading-normal">
+          <Icon name="search_off" size={20} className="mt-px text-muted" />
+          <div className="flex flex-col gap-1">
+            <span>{noneReason}</span>
+            <span className="text-muted">{nextStep}</span>
+          </div>
+        </div>
+      ) : (
+        rows.map((r) => {
+          const st = PROPOSAL_STATUS[r.status]
+          const code = episodeCode(r.seasonNumber, r.episodeNumber)
+          const usedBy = r.usedByFileId != null ? nameOf.get(r.usedByFileId) : null
+          const anchor = r.basedOnFileId != null ? nameOf.get(r.basedOnFileId) : null
+          return (
+            <div
+              key={r.fileId}
+              className={cn(
+                'grid grid-cols-[28px_minmax(180px,1.3fr)_24px_minmax(200px,1.5fr)_auto] items-center gap-3 border-b border-line px-5 py-2.5',
+                (!r.pairing || r.change === 'SAME') && 'opacity-60',
+              )}
+            >
+              <Checkbox
+                aria-label={`Parear ${r.fileName}`}
+                checked={marked.has(r.fileId)}
+                disabled={!r.pairing || r.change === 'SAME'}
+                onCheckedChange={(v) => {
+                  const n = new Set(marked)
+                  if (v) n.add(r.fileId)
+                  else n.delete(r.fileId)
+                  setChecked(n)
+                }}
+              />
+              <div className="flex min-w-0 flex-col gap-px">
+                <span className="truncate font-mono text-sm">{r.fileName}</span>
+                {r.change === 'REPLACE' && (
+                  <span className="truncate text-xs text-[var(--warn-fg)]">
+                    substitui {episodeCode(r.currentSeasonNumber, r.currentEpisodeNumber)}
+                  </span>
+                )}
+                {anchor && r.change !== 'SAME' && <span className="truncate text-xs text-muted">depois de {anchor}</span>}
+                {usedBy && <span className="truncate text-xs text-[var(--warn-fg)]">já usado por {usedBy}</span>}
+              </div>
+              <Icon name="arrow_forward" size={18} className="text-muted" />
+              <div className="flex min-w-0 items-baseline gap-2">
+                {code ? (
+                  <>
+                    <span className="font-mono text-sm font-bold">{code}</span>
+                    <span className="truncate">{r.pairing?.episodeName}</span>
+                  </>
+                ) : (
+                  <span className="text-muted">Sem proposta</span>
+                )}
+              </div>
+              <Chip tone={r.change === 'SAME' ? 'neutral' : st.tone} className="h-5 justify-self-end text-xs">
+                {r.change === 'SAME' ? 'igual ao par atual' : st.label}
+              </Chip>
+            </div>
+          )
+        })
+      )}
+      {noneReason ? (
+        <div className="flex justify-end px-5 py-3">
+          <Button size="sm" onClick={onClose}>
+            Fechar
+          </Button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2 px-5 py-3">
+          <span className="min-w-[200px] flex-1 text-sm text-muted">
+            Os pareamentos marcados são salvos com os dados do episódio vindos do TMDB, como a proposta os traz.
+          </span>
+          <Button size="sm" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button size="sm" variant="primary" disabled={toApply.length === 0} loading={applying} onClick={apply}>
+            Aplicar {toApply.length} {toApply.length === 1 ? 'pareamento' : 'pareamentos'}
+          </Button>
         </div>
       )}
-      {rows.map((r) => {
-        const st = STATUS[r.status]
-        return (
-          <div
-            key={r.file.id}
-            className={cn(
-              'grid grid-cols-[28px_minmax(180px,1.3fr)_24px_minmax(200px,1.5fr)_auto] items-center gap-3 border-b border-line px-5 py-2.5',
-              !r.selectable && !checked.has(r.file.id) && 'opacity-60',
-            )}
-          >
-            <Checkbox
-              aria-label={`Parear ${r.file.name}`}
-              checked={checked.has(r.file.id)}
-              disabled={!r.target}
-              onCheckedChange={(v) =>
-                setChecked((s) => {
-                  const n = new Set(s)
-                  if (v) n.add(r.file.id)
-                  else n.delete(r.file.id)
-                  return n
-                })
-              }
-            />
-            <div className="flex min-w-0 flex-col gap-px">
-              <span className="truncate font-mono text-sm">{r.file.name}</span>
-              <span className="truncate text-xs text-muted">depois de {r.after.name}</span>
-            </div>
-            <Icon name="arrow_forward" size={18} className="text-muted" />
-            <div className="flex min-w-0 items-baseline gap-2">
-              {r.target ? (
-                <>
-                  <span className="font-mono text-sm font-bold">{episodeCode(r.target.season, r.target.episode)}</span>
-                  <span className="truncate">{r.target.ep.name}</span>
-                </>
-              ) : (
-                <span className="text-muted">Não há episódio seguinte</span>
-              )}
-            </div>
-            <Chip tone={st.tone} className="h-5 justify-self-end text-xs">
-              {st.label(r)}
-            </Chip>
-          </div>
-        )
-      })}
-      <div className="flex flex-wrap items-center gap-2 px-5 py-3">
-        <span className="min-w-[200px] flex-1 text-sm text-muted">
-          Os pareamentos selecionados são salvos com os dados do episódio e o still padrão do TMDB.
-        </span>
-        <Button size="sm" onClick={onClose}>
-          Cancelar
-        </Button>
-        <Button size="sm" variant="primary" disabled={count === 0} loading={applying} onClick={apply}>
-          Aplicar {count} {count === 1 ? 'pareamento' : 'pareamentos'}
-        </Button>
-      </div>
     </section>
   )
 }

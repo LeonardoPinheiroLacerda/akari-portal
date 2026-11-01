@@ -63,8 +63,8 @@ se referem a esse app futuro.
 - Catálogo com busca, ordenação e filtros de curadoria (status de revisão, vínculo AniList, vínculo
   TMDB, episódios pareados).
 - Curadoria do item em abas: AniList (vínculo, início da franquia, árvore de relações), TMDB,
-  Overrides (com visualização das imagens em tamanho original), Pareamento de episódios (com
-  auto-pair por continuidade) e Reprodução.
+  Overrides (com visualização das imagens em tamanho original), Pareamento de episódios (com as
+  propostas do anibridge e por continuidade, calculadas no backend) e Reprodução.
 - Status de revisão de cada título, visível e acionável em todas as abas.
 - Cache de vídeo ao vivo: fila de downloads com progresso, tentar de novo, cancelar, deletar e ações
   em massa.
@@ -79,7 +79,7 @@ se referem a esse app futuro.
 - **Sem jargão.** Textos em português, sem nomes de endpoint nem valores técnicos crus na
   interface (status e tipos aparecem traduzidos).
 - **O backend decide.** Regras de negócio ficam no backend; as poucas que ainda são calculadas no
-  portal (auto-pair, árvore da franquia, ações em massa do cache, troca de vínculo) são **Backlog
+  portal (árvore da franquia, ações em massa do cache, troca de vínculo) são **Backlog
   real** (confirmado pelo mantenedor) para migrar para o backend aos poucos.
 
 ## Contexto operacional do sistema

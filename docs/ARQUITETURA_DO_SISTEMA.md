@@ -108,10 +108,9 @@ READMEs:
 
 - catálogo de tipos de provedor e seus campos (`features/providers`);
 - metadados das preferências (rótulo, tipo, valores aceitos) (`pages/preferences`);
-- proposta de auto-pair e árvore de relações da franquia, com as limitações conhecidas da árvore
-  (`features/item`);
-- troca de vínculo AniList/TMDB em duas chamadas não atômicas, aplicação do auto-pair um par por
-  requisição, legenda selecionável ou queimada deduzida pelo codec (`pages/item`);
+- árvore de relações da franquia, com as limitações conhecidas (`features/item`);
+- troca de vínculo AniList/TMDB em duas chamadas não atômicas, legenda selecionável ou queimada
+  deduzida pelo codec (`pages/item`);
 - ações em massa do cache, um `DELETE` por linha (`pages/cache`).
 
 **Lacunas do contrato ou do backend que afetam o portal** — **Backlog real**, correção no `akari`:
@@ -123,7 +122,8 @@ READMEs:
 
 **Outros acoplamentos aceitos** (**Aceito**, confirmado pelo mantenedor): invalidação por grupo
 amplo, reconexão periódica do stream de cache ocioso, último teste de conexão guardado só no
-navegador, edição de provedor começando vazia.
+navegador, edição de provedor começando vazia, gravação de uma proposta de pareamento com um `PUT`
+por arquivo (`pages/item`).
 
 **Sem testes automatizados.** **Backlog real** (confirmado pelo mantenedor): começar pelas regras
 calculadas no cliente.

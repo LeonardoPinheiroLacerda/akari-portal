@@ -20,7 +20,7 @@ import { usePlaybackSession, type StartTracks, type Tracks } from '@/features/pl
 import { useSetting } from '@/features/settings/useSetting'
 import { providerName, usesCache } from '@/features/providers/types'
 import { useProviders } from '@/features/providers/useProviders'
-import { byName } from '@/features/item/autoPair'
+import { byName } from '@/features/item/files'
 import { episodeCode, formatBitrate, formatBytes, formatClock, formatTime, parseClock } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
