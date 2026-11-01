@@ -346,7 +346,7 @@ export function CatalogPage() {
                     <div className="flex min-w-0 flex-col gap-0.5">
                       <span className="truncate">{b.title ?? `AniList ${b.anilistId}`}</span>
                       <span className="truncate font-mono text-sm text-muted">
-                        {[b.year, b.format, `AniList ${b.anilistId}`].filter(Boolean).join(' · ')}
+                        {[b.year, b.format, b.studio, `AniList ${b.anilistId}`].filter(Boolean).join(' · ')}
                       </span>
                     </div>
                   ) : (

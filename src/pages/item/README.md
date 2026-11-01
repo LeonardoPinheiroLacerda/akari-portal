@@ -30,7 +30,7 @@ sessão de reprodução em [`src/features/playback`](../../features/playback/REA
 ## AniList (`AnilistTab`)
 
 - **Sem anime vinculado** — mostra a pasta livre e "Vincular anime", que abre a busca na AniList.
-- **Metadata** — dados da AniList (títulos, formato, estação, episódios, nota, gêneros, sinopse
+- **Metadata** — dados da AniList (títulos, formato, estação, estúdio, episódios, nota, gêneros, sinopse
   sanitizada com DOMPurify), com o `anilistId` e o `malId` como links para a página do anime na
   AniList e no MyAnimeList (como o id da aba TMDB leva ao site do TMDB) e as ações Sincronizar (busca de novo na AniList), Trocar anime e
   Desvincular.
@@ -94,6 +94,9 @@ sessão de reprodução em [`src/features/playback`](../../features/playback/REA
   (`mm:ss`) e troca de faixas durante a reprodução.
 - A aba indica se a legenda será selecionável ou queimada no vídeo pelo codec (SRT é selecionável),
   repetindo a regra que o backend aplica.
+- As informações técnicas do arquivo listam as faixas de vídeo (com DAR e SAR — SAR diferente de
+  `1:1` sai destacado como anamórfico), áudio e legenda e os capítulos do arquivo como o probe os
+  devolve (início, fim, duração e título, sem reordenar nem corrigir sobreposições).
 - O estado do cache de um arquivo é achado listando até 500 linhas do cache e procurando o
   arquivo, porque a listagem do cache não filtra por arquivo. **Confirmado** (contrato,
   `listCaches`: só `page`, `size` e `pendingOnly`). Com mais de 500 linhas no cache, o estado pode

@@ -30,6 +30,7 @@ const PROFILE_HINT: Record<TranscodeProfile, string> = {
 }
 
 const isSoft = (codec?: string | null) => codec === 'subrip' || codec === 'srt'
+const isAnamorphic = (sar?: string | null) => !!sar && sar !== '1:1' && sar !== '0:1'
 const subLabel = (s: SubtitleTrack) => s.title ?? s.language ?? s.codec ?? 'Legenda'
 
 export function PlaybackTab({ item, folderId }: { item: ItemState; folderId: number }) {
@@ -375,13 +376,14 @@ function TechInfo({ probe, audio, sub }: { probe: MediaInfoResponse; audio: numb
   const head = 'grid gap-2.5 border-b border-line px-4 py-2 text-2xs uppercase tracking-[.06em] text-muted'
   const row = 'grid items-center gap-2.5 border-b border-line px-4 py-[9px] font-mono text-sm'
   const def = <Chip className="h-[18px] text-2xs font-bold">default</Chip>
-  const V = 'grid-cols-[40px_90px_110px_70px_70px_150px_100px_1fr]'
+  const V = 'grid-cols-[40px_90px_110px_70px_70px_70px_150px_100px_1fr]'
   const A = 'grid-cols-[40px_70px_90px_100px_90px_90px_1fr]'
   const S = 'grid-cols-[40px_80px_70px_1fr_160px]'
+  const C = 'grid-cols-[40px_90px_90px_90px_1fr]'
 
   return (
     <section className="card overflow-x-auto">
-      <div className="min-w-[820px]">
+      <div className="min-w-[900px]">
         <div className="flex flex-wrap items-baseline gap-x-5 gap-y-2.5 border-b border-line px-4 py-3.5">
           <h3 className="m-0 text-15 font-semibold">Informações técnicas do arquivo</h3>
           <div className="flex-1" />
@@ -403,6 +405,7 @@ function TechInfo({ probe, audio, sub }: { probe: MediaInfoResponse; audio: numb
           <span>Codec</span>
           <span>Resolução</span>
           <span>DAR</span>
+          <span>SAR</span>
           <span>FPS</span>
           <span>Pixel / profile</span>
           <span>Bitrate</span>
@@ -414,6 +417,14 @@ function TechInfo({ probe, audio, sub }: { probe: MediaInfoResponse; audio: numb
             <span>{v.codec ?? '—'}</span>
             <span>{v.width && v.height ? `${v.width}×${v.height}` : '—'}</span>
             <span>{v.displayAspectRatio ?? '—'}</span>
+            <span
+              className={cn(isAnamorphic(v.sampleAspectRatio) && 'text-[var(--warn-fg)]')}
+              title={
+                isAnamorphic(v.sampleAspectRatio) ? 'Anamórfico: a resolução não reflete a proporção de exibição' : undefined
+              }
+            >
+              {v.sampleAspectRatio ?? '—'}
+            </span>
             <span>{v.frameRate?.toLocaleString('pt-BR', { maximumFractionDigits: 3 }) ?? '—'}</span>
             <span className="truncate">{[v.pixFmt, v.profile].filter(Boolean).join(' · ') || '—'}</span>
             <span>{formatBitrate(v.bitRate)}</span>
@@ -483,6 +494,27 @@ function TechInfo({ probe, audio, sub }: { probe: MediaInfoResponse; audio: numb
           </div>
         ))}
         {probe.subtitles.length === 0 && <div className="px-4 py-2.5 text-13 text-muted">Sem legendas.</div>}
+
+        <div className="px-4 pb-1 pt-3.5 text-sm font-semibold">Capítulos</div>
+        {probe.chapters.length > 0 && (
+          <div className={cn(head, C)}>
+            <span>#</span>
+            <span>Início</span>
+            <span>Fim</span>
+            <span>Duração</span>
+            <span>Título</span>
+          </div>
+        )}
+        {probe.chapters.map((ch, i) => (
+          <div key={i} className={cn(row, C)}>
+            <span className="text-muted">{i}</span>
+            <span>{formatClock(ch.startSeconds)}</span>
+            <span>{formatClock(ch.endSeconds)}</span>
+            <span>{formatClock(ch.endSeconds - ch.startSeconds)}</span>
+            <span className="font-sans">{ch.title ?? '—'}</span>
+          </div>
+        ))}
+        {probe.chapters.length === 0 && <div className="px-4 py-2.5 text-13 text-muted">Sem capítulos.</div>}
       </div>
     </section>
   )

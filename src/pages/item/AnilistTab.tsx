@@ -203,6 +203,7 @@ function MetadataCard({
               { label: 'Japonês', value: a.titles?.japanese },
               { label: 'Sinônimos', value: a.titles?.synonyms?.length ? a.titles.synonyms.join(', ') : '—' },
               { label: 'Formato · estação', value: season || '—', mono: true },
+              { label: 'Estúdio', value: a.studio ?? '—' },
               {
                 label: 'Episódios',
                 value: [a.episodes ?? '?', a.duration && `${a.duration}${/^\d+$/.test(a.duration) ? ' min' : ''}`]
@@ -469,6 +470,7 @@ function AnilistSearch({
         const meta = [
           `AniList ${r.anilistId}`,
           r.format,
+          r.studio,
           r.season && r.seasonYear ? `${r.season} ${r.seasonYear}` : r.seasonYear,
           r.episodes != null && `${r.episodes} eps`,
           r.duration != null && `${r.duration} min`,

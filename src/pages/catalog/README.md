@@ -14,10 +14,10 @@ curadoria e ordenação. É a porta de entrada da curadoria — daqui se abre o 
   aplicados no backend. **Confirmado** (contrato, `listFolders`).
 - Ordenação por nome (A–Z, Z–A) ou data de criação (recentes, antigas) — os dois campos que o
   backend aceita.
-- Cada linha mostra a capa e o título do anime vinculado (ou "Sem vínculo"), o provedor e o
-  caminho, o tipo da pasta (Anime, Série ou Filme, de `MEDIA_TYPE_LABEL` em
-  [`src/features/item/labels.ts`](../../features/item/labels.ts)), se tem TMDB, se tem arquivos e a
-  data de criação.
+- Cada linha mostra a capa e o título do anime vinculado (com ano, formato e estúdio, ou "Sem
+  vínculo"), o provedor e o caminho, o tipo da pasta (Anime, Série ou Filme, de `MEDIA_TYPE_LABEL`
+  em [`src/features/item/labels.ts`](../../features/item/labels.ts)), se tem TMDB, se tem arquivos e
+  a data de criação.
 - Clicar numa linha abre o item na aba AniList — inclusive pastas sem anime vinculado, que caem no
   botão "Vincular anime" dessa aba.
 - A seta da última coluna mostra as **subpastas** daquela pasta (filtro `parentId`), com um chip
