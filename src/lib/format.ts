@@ -8,7 +8,12 @@ const dateTimeFmt = new Intl.DateTimeFormat('pt-BR', {
 })
 const timeFmt = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
-export const formatDate = (iso?: string | null) => (iso ? dateFmt.format(new Date(iso)) : '—')
+/** Data sem hora (`2004-10-05`) é lida como data local; `new Date` a leria como meia-noite UTC e voltaria um dia no Brasil. */
+const parseDate = (iso: string) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(iso)
+}
+export const formatDate = (iso?: string | null) => (iso ? dateFmt.format(parseDate(iso)) : '—')
 export const formatDateTime = (iso?: string | null) => (iso ? dateTimeFmt.format(new Date(iso)) : '—')
 export const formatTime = (d: Date | number) => timeFmt.format(d)
 
