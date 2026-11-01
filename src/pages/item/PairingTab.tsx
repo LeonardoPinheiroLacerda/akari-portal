@@ -33,7 +33,7 @@ import { Switch } from '@/components/ui/switch'
 import { Thumb } from '@/components/ui/thumb'
 import { byName } from '@/features/item/files'
 import type { ItemState } from '@/features/item/useItem'
-import { episodeCode, formatDate } from '@/lib/format'
+import { episodeCode, formatDate, pluralize } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 type Sel = { season: number; episode: number } | null
@@ -124,8 +124,9 @@ export function PairingTab({ item, folderId }: { item: ItemState; folderId: numb
         <div className="flex min-w-[240px] flex-1 flex-col gap-0.5">
           <h3 className="m-0 text-15 font-semibold">Pareamento de arquivos com episódios TMDB</h3>
           <span className="text-sm text-muted">
-            {pairedCount} de {files.length} arquivos pareados · série tv/{item.tmdb.data?.tmdbId} ·{' '}
-            {seasons.filter((s) => (s.seasonNumber ?? 0) > 0).length} temporadas
+            {pairedCount} de {pluralize(files.length, 'arquivo pareado', 'arquivos pareados')} · série tv/
+            {item.tmdb.data?.tmdbId} ·{' '}
+            {pluralize(seasons.filter((s) => (s.seasonNumber ?? 0) > 0).length, 'temporada', 'temporadas')}
           </span>
         </div>
         <div className="flex min-w-[200px] flex-[0_1_260px] items-center gap-2.5">
@@ -630,7 +631,12 @@ function PairingProposalPanel({
   const marked = checked ?? new Set(rows.filter((r) => r.selectedByDefault).map((r) => r.fileId))
   const [applying, setApplying] = useState(false)
   const toApply = rows.filter((r) => marked.has(r.fileId) && r.pairing)
-  const proposable = rows.filter((r) => r.pairing && r.change !== 'SAME').length
+  // Linhas iguais ao par atual não pedem ação: ficam recolhidas, para o que muda aparecer.
+  const [showSame, setShowSame] = useState(false)
+  const sameCount = rows.filter((r) => r.change === 'SAME').length
+  const markable = rows.filter((r) => r.pairing && r.change !== 'SAME')
+  const shown = showSame ? rows : rows.filter((r) => r.change !== 'SAME')
+  const allSame = rows.length > 0 && sameCount === rows.length
 
   // Sem proposta para nenhum arquivo: motivo da pasta, ou o 404/400 do backend (anime sem vínculo, vínculo de filme).
   const errStatus = proposal.isError ? errorStatus(proposal.error) : undefined
@@ -672,81 +678,115 @@ function PairingProposalPanel({
       <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-5 py-3.5">
         <div className="flex min-w-[260px] flex-1 flex-col gap-[3px]">
           <h3 className="m-0 text-15 font-semibold">{STRATEGY_TEXT[strategy].title}</h3>
-          {!noneReason && (
+          {!noneReason && !allSame && (
             <span className="text-sm leading-[1.45] text-muted [text-wrap:pretty]">{STRATEGY_TEXT[strategy].description}</span>
           )}
         </div>
         {noneReason && <Chip>Sem proposta</Chip>}
-        {proposal.data && !noneReason && (
+        {allSame && <Chip tone="ok">Nada a mudar</Chip>}
+        {markable.length > 0 && (
           <span className="text-sm text-muted">
-            {proposable} {proposable === 1 ? 'proposta nova' : 'propostas novas'} · {toApply.length} marcados
+            {markable.length} {markable.length === 1 ? 'proposta' : 'propostas'} · {toApply.length}{' '}
+            {toApply.length === 1 ? 'marcada' : 'marcadas'}
           </span>
         )}
       </div>
       {proposal.isLoading && <Loading label="Calculando a proposta…" />}
       {proposal.isError && !noneReason && <ErrorState error={proposal.error} onRetry={() => proposal.refetch()} />}
-      {noneReason ? (
+      {noneReason || allSame ? (
         <div className="flex items-start gap-3 border-b border-line px-5 py-4 text-13 leading-normal">
-          <Icon name="search_off" size={20} className="mt-px text-muted" />
+          <Icon
+            name={allSame ? 'check_circle' : 'search_off'}
+            size={20}
+            fill={allSame}
+            className={cn('mt-px', allSame ? 'text-[var(--ok-fg)]' : 'text-muted')}
+          />
           <div className="flex flex-col gap-1">
-            <span>{noneReason}</span>
-            <span className="text-muted">{nextStep}</span>
+            <span>{allSame ? 'Todos os arquivos já estão pareados como a proposta.' : noneReason}</span>
+            {!allSame && <span className="text-muted">{nextStep}</span>}
           </div>
         </div>
       ) : (
-        rows.map((r) => {
-          const st = PROPOSAL_STATUS[r.status]
-          const code = episodeCode(r.seasonNumber, r.episodeNumber)
-          const usedBy = r.usedByFileId != null ? nameOf.get(r.usedByFileId) : null
-          const anchor = r.basedOnFileId != null ? nameOf.get(r.basedOnFileId) : null
-          return (
-            <div
-              key={r.fileId}
-              className={cn(
-                'grid grid-cols-[28px_minmax(180px,1.3fr)_24px_minmax(200px,1.5fr)_auto] items-center gap-3 border-b border-line px-5 py-2.5',
-                (!r.pairing || r.change === 'SAME') && 'opacity-60',
-              )}
-            >
-              <Checkbox
-                aria-label={`Parear ${r.fileName}`}
-                checked={marked.has(r.fileId)}
-                disabled={!r.pairing || r.change === 'SAME'}
-                onCheckedChange={(v) => {
-                  const n = new Set(marked)
-                  if (v) n.add(r.fileId)
-                  else n.delete(r.fileId)
-                  setChecked(n)
-                }}
-              />
-              <div className="flex min-w-0 flex-col gap-px">
-                <span className="truncate font-mono text-sm">{r.fileName}</span>
-                {r.change === 'REPLACE' && (
-                  <span className="truncate text-xs text-[var(--warn-fg)]">
-                    substitui {episodeCode(r.currentSeasonNumber, r.currentEpisodeNumber)}
+        <>
+          {shown.map((r, i) => {
+            const code = episodeCode(r.seasonNumber, r.episodeNumber)
+            const usedBy = r.usedByFileId != null ? nameOf.get(r.usedByFileId) : null
+            // A âncora só é informação nova quando não é a linha logo acima.
+            const anchor =
+              r.basedOnFileId != null && r.basedOnFileId !== shown[i - 1]?.fileId ? nameOf.get(r.basedOnFileId) : null
+            const same = r.change === 'SAME'
+            // Chip só nas exceções; proposta nova sem conflito dispensa rótulo (o checkbox já diz).
+            const chip: { label: string; tone: Tone } | null = !r.pairing
+              ? PROPOSAL_STATUS[r.status]
+              : same
+                ? { label: 'igual ao par atual', tone: 'neutral' }
+                : r.change === 'REPLACE'
+                  ? { label: `troca ${episodeCode(r.currentSeasonNumber, r.currentEpisodeNumber)}`, tone: 'warn' }
+                  : usedBy
+                    ? { label: 'episódio já usado', tone: 'warn' }
+                    : null
+            return (
+              <div
+                key={r.fileId}
+                className={cn(
+                  'grid grid-cols-[28px_minmax(180px,1.3fr)_24px_minmax(200px,1.5fr)_auto] items-center gap-3 border-b border-line px-5 py-2.5',
+                  (!r.pairing || same) && 'opacity-60',
+                )}
+              >
+                <Checkbox
+                  aria-label={`Parear ${r.fileName}`}
+                  checked={marked.has(r.fileId)}
+                  disabled={!r.pairing || same}
+                  onCheckedChange={(v) => {
+                    const n = new Set(marked)
+                    if (v) n.add(r.fileId)
+                    else n.delete(r.fileId)
+                    setChecked(n)
+                  }}
+                />
+                <div className="flex min-w-0 flex-col gap-px">
+                  <span className="truncate font-mono text-sm" title={r.fileName}>
+                    {r.fileName}
                   </span>
-                )}
-                {anchor && r.change !== 'SAME' && <span className="truncate text-xs text-muted">depois de {anchor}</span>}
-                {usedBy && <span className="truncate text-xs text-[var(--warn-fg)]">já usado por {usedBy}</span>}
-              </div>
-              <Icon name="arrow_forward" size={18} className="text-muted" />
-              <div className="flex min-w-0 items-baseline gap-2">
-                {code ? (
-                  <>
-                    <span className="font-mono text-sm font-bold">{code}</span>
-                    <span className="truncate">{r.pairing?.episodeName}</span>
-                  </>
+                  {anchor && <span className="truncate text-xs text-muted">continua de {anchor}</span>}
+                  {usedBy && <span className="truncate text-xs text-[var(--warn-fg)]">já está em {usedBy}</span>}
+                </div>
+                <Icon name="arrow_forward" size={18} className="text-muted" />
+                <div className="flex min-w-0 items-baseline gap-2">
+                  {code ? (
+                    <>
+                      <span className="font-mono text-sm font-bold">{code}</span>
+                      <span className="truncate">{r.pairing?.episodeName}</span>
+                    </>
+                  ) : (
+                    <span className="text-muted">Sem proposta</span>
+                  )}
+                </div>
+                {chip ? (
+                  <Chip tone={chip.tone} className="h-5 justify-self-end text-xs">
+                    {chip.label}
+                  </Chip>
                 ) : (
-                  <span className="text-muted">Sem proposta</span>
+                  <span />
                 )}
               </div>
-              <Chip tone={r.change === 'SAME' ? 'neutral' : st.tone} className="h-5 justify-self-end text-xs">
-                {r.change === 'SAME' ? 'igual ao par atual' : st.label}
-              </Chip>
-            </div>
-          )
-        })
+            )
+          })}
+          {sameCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowSame((v) => !v)}
+              className="flex w-full items-center gap-2 border-b border-line px-5 py-2.5 text-left text-sm text-muted hover:bg-hover"
+            >
+              <Icon name={showSame ? 'expand_less' : 'expand_more'} size={18} />
+              {showSame
+                ? 'Esconder os arquivos que já estão como a proposta'
+                : `${pluralize(sameCount, 'arquivo já está pareado', 'arquivos já estão pareados')} como a proposta · mostrar`}
+            </button>
+          )}
+        </>
       )}
-      {noneReason ? (
+      {noneReason || markable.length === 0 ? (
         <div className="flex justify-end px-5 py-3">
           <Button size="sm" onClick={onClose}>
             Fechar
@@ -754,9 +794,19 @@ function PairingProposalPanel({
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-2 px-5 py-3">
-          <span className="min-w-[200px] flex-1 text-sm text-muted">
-            Os pareamentos marcados são salvos com os dados do episódio vindos do TMDB, como a proposta os traz.
-          </span>
+          <div className="flex min-w-[200px] flex-1 flex-wrap items-center gap-x-3 gap-y-1">
+            {markable.length > 1 && (
+              <>
+                <Button variant="link" size="xs" onClick={() => setChecked(new Set(markable.map((r) => r.fileId)))}>
+                  Marcar todas
+                </Button>
+                <Button variant="link" size="xs" onClick={() => setChecked(new Set())}>
+                  Desmarcar todas
+                </Button>
+              </>
+            )}
+            <span className="text-sm text-muted">Confira o nome de cada episódio antes de aplicar.</span>
+          </div>
           <Button size="sm" onClick={onClose}>
             Cancelar
           </Button>

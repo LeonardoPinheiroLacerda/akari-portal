@@ -102,8 +102,13 @@ sessão de reprodução em [`src/features/playback`](../../features/playback/REA
   depende do anibridge. Toda a regra vem do backend — episódio proposto, `status` de cada arquivo,
   comparação com o par atual (`change`), episódio já usado por outro arquivo (`usedByFileId`),
   âncora da continuidade (`basedOnFileId`) e pré-seleção (`selectedByDefault`); o painel só
-  exibe, na ordem que o backend devolve. Proposta igual ao par atual não pode ser marcada;
-  proposta que troca um par existente aparece como "substitui SxxEyy". A chamada não grava nada,
+  exibe, na ordem que o backend devolve. Para o que muda aparecer, as linhas iguais ao par atual
+  ficam recolhidas numa linha ("N arquivos já estão pareados como a proposta · mostrar"); se a
+  pasta inteira já está assim, o painel diz "Nada a mudar". Proposta nova sem conflito não leva
+  chip — o checkbox já diz; chips só nas exceções: "troca SxxEyy" (substitui um par existente),
+  "episódio já usado" (com o arquivo que o usa) ou o motivo de não haver proposta. "continua de…"
+  só aparece quando a âncora da continuidade não é a linha logo acima. "Marcar todas" e "Desmarcar
+  todas" agem sobre as propostas marcáveis; sem nenhuma, o rodapé fica só com "Fechar". A chamada não grava nada,
   então o portal a lê como consulta, sempre recalculada ao abrir o painel. **Confirmado**
   (contrato, `proposeTmdbFilePairing`).
 - "Aplicar" grava o `pairing` pronto de cada arquivo marcado, com o `PUT` de `tmdb-pairing`, um por
