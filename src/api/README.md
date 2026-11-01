@@ -60,7 +60,9 @@ precisa do backend.
 - **Invalidação por prefixo.** As chaves geradas pelo Orval começam pela URL da operação, então
   `invalidatePrefixes('/v1/cache/')` derruba toda query cuja URL comece com esse prefixo. O objeto
   `invalidate` agrupa os prefixos usados depois de cada mutação (`catalog`, `anime`, `tmdb`,
-  `videoFiles`, `providers`, `notifications`, `cache`, `settings`). Invalidar por grupo amplo
+  `videoFiles`, `providers`, `notifications`, `cache`, `settings`); `cache` também derruba a
+  disponibilidade de arquivos para reprodução (`/v1/playback/files/`), que deriva do cache.
+  Invalidar por grupo amplo
   refaz mais queries do que a mutação afetou. **Aceito** (confirmado pelo mantenedor): a
   simplicidade vale mais que as requisições extras.
 

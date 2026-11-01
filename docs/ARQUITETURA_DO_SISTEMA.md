@@ -109,7 +109,6 @@ READMEs:
 
 - catálogo de tipos de provedor e seus campos (`features/providers`);
 - metadados das preferências (rótulo, tipo, valores aceitos) (`pages/preferences`);
-- perfis de transcode (`features/playback`);
 - proposta de auto-pair e árvore de relações da franquia, com as limitações conhecidas da árvore
   (`features/item`);
 - troca de vínculo AniList/TMDB em duas chamadas não atômicas, aplicação do auto-pair um par por
@@ -121,7 +120,6 @@ READMEs:
 - remover um provedor que ainda tem pastas falha por chave estrangeira (`pages/providers`);
 - remover um trecho do catálogo deixa os arquivos em cache órfãos no disco (`pages/ingestion`);
 - `404` ambíguo na reprodução (`features/playback`);
-- listagem do cache sem filtro por arquivo (`pages/item`, aba Reprodução);
 - chamadas sem timeout no mutator (`src/api`).
 
 **Outros acoplamentos aceitos** (**Aceito**, confirmado pelo mantenedor): invalidação por grupo

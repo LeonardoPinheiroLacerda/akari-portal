@@ -38,6 +38,7 @@ export const invalidate = {
   videoFiles: () => invalidatePrefixes('/v1/catalog/video-files'),
   providers: () => invalidatePrefixes('/v1/storage/providers'),
   notifications: () => invalidatePrefixes('/v1/notifications'),
-  cache: () => invalidatePrefixes('/v1/cache/'),
+  // A disponibilidade de um arquivo para reprodução deriva do cache.
+  cache: () => invalidatePrefixes('/v1/cache/', '/v1/playback/files/'),
   settings: () => invalidatePrefixes('/v1/settings'),
 }

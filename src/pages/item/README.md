@@ -85,10 +85,12 @@ sessão de reprodução em [`src/features/playback`](../../features/playback/REA
 
 ## Reprodução (`PlaybackTab`)
 
-- Escolhe o arquivo e mostra a disponibilidade: provedor local é lido direto do disco; provedor
-  remoto precisa estar no cache — a aba mostra o estado do download e oferece "Enfileirar download"
-  quando o arquivo está fora do cache ou falhou. Enquanto o arquivo está na fila ou baixando, a aba
-  recarrega o estado a cada 5 s.
+- Escolhe o arquivo e mostra a disponibilidade, lida de `GET /v1/playback/files/{fileId}/availability`:
+  `READY` (provedor local, lido direto do disco, ou remoto já em cache), `DOWNLOADING` (na fila ou
+  baixando) ou `NEEDS_DOWNLOAD` (fora do cache ou com download que falhou), que oferece "Enfileirar
+  download". O endpoint não diferencia fila de download em andamento nem falha de "nunca baixado";
+  esse detalhe fica na tela Cache. Enquanto o arquivo está `DOWNLOADING`, a aba recarrega a
+  disponibilidade a cada 5 s.
 - Com o arquivo disponível, lê o probe de mídia (faixas de áudio e legenda) e libera o player:
   perfil (os valores do enum `TranscodeProfile`), faixa de áudio, legenda, "Ir para" uma posição
   (`mm:ss`) e troca de faixas durante a reprodução.
@@ -101,11 +103,6 @@ sessão de reprodução em [`src/features/playback`](../../features/playback/REA
 - As informações técnicas do arquivo listam as faixas de vídeo (com DAR e SAR — SAR diferente de
   `1:1` sai destacado como anamórfico), áudio e legenda e os capítulos do arquivo como o probe os
   devolve (início, fim, duração e título, sem reordenar nem corrigir sobreposições).
-- O estado do cache de um arquivo é achado listando até 500 linhas do cache e procurando o
-  arquivo, porque a listagem do cache não filtra por arquivo. **Confirmado** (contrato,
-  `listCaches`: só `page`, `size` e `pendingOnly`). Com mais de 500 linhas no cache, o estado pode
-  sair errado. **Backlog real** (confirmado pelo mantenedor): o backend deveria filtrar a listagem
-  do cache por arquivo.
 
 ## Regras calculadas na tela
 

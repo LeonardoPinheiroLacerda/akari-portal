@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { useListCaches, useQueueCacheDownload } from '@/api/generated/endpoints/cache/cache'
+import { useQueueCacheDownload } from '@/api/generated/endpoints/cache/cache'
 import { useGetMediaProbe } from '@/api/generated/endpoints/media-probe/media-probe'
+import { useGetFileAvailability } from '@/api/generated/endpoints/playback/playback'
 import { useListVideoFiles } from '@/api/generated/endpoints/video-file/video-file'
 import { TranscodeProfile, type MediaInfoResponse, type SubtitleTrack } from '@/api/generated/model'
 import { errorStatus, toastError } from '@/api/errors'
@@ -50,34 +51,26 @@ export function PlaybackTab({ item, folderId }: { item: ItemState; folderId: num
   }, [files, fileId])
   const file = files.find((f) => f.id === fileId)
 
-  // A API não filtra o cache por arquivo; a listagem é pequena (linhas do cache local).
-  const caches = useListCaches(
-    { page: 0, size: 500 },
-    {
-      query: {
-        enabled: remote,
-        refetchInterval: (q) =>
-          q.state.data?.data.some((c) => c.videoFile?.id === fileId && (c.status === 'QUEUED' || c.status === 'DOWNLOADING'))
-            ? 5000
-            : false,
-      },
+  const availability = useGetFileAvailability(fileId ?? 0, {
+    query: {
+      enabled: fileId != null,
+      refetchInterval: (q) => (q.state.data?.status === 'DOWNLOADING' ? 5000 : false),
     },
-  )
-  const cacheRow = caches.data?.data.find((c) => c.videoFile?.id === fileId)
-  const cacheState: { label: string; tone: Tone; ready: boolean; canQueue: boolean } = !remote
-    ? { label: 'Leitura direta do disco', tone: 'ok', ready: true, canQueue: false }
-    : cacheRow?.status === 'COMPLETED'
-      ? { label: 'Em cache', tone: 'ok', ready: true, canQueue: false }
-      : cacheRow?.status === 'QUEUED' || cacheRow?.status === 'DOWNLOADING'
-        ? {
-            label: cacheRow.status === 'DOWNLOADING' ? 'Baixando' : 'Na fila de download',
-            tone: 'info',
-            ready: false,
-            canQueue: false,
-          }
-        : cacheRow?.status === 'FAILED'
-          ? { label: 'Falha no download', tone: 'err', ready: false, canQueue: true }
-          : { label: 'Fora do cache', tone: 'warn', ready: false, canQueue: true }
+  })
+  const status = availability.data?.status
+  const cacheState: { label: string; tone: Tone; ready: boolean; canQueue: boolean } =
+    status === 'READY'
+      ? { label: remote ? 'Em cache' : 'Leitura direta do disco', tone: 'ok', ready: true, canQueue: false }
+      : status === 'DOWNLOADING'
+        ? { label: 'Baixando', tone: 'info', ready: false, canQueue: false }
+        : status === 'NEEDS_DOWNLOAD'
+          ? { label: 'Fora do cache', tone: 'warn', ready: false, canQueue: true }
+          : {
+              label: availability.isError ? 'Erro ao consultar' : 'Consultando…',
+              tone: availability.isError ? 'err' : 'neutral',
+              ready: false,
+              canQueue: false,
+            }
 
   const queue = useQueueCacheDownload()
   const probe = useGetMediaProbe(fileId ?? 0, { query: { enabled: fileId != null && cacheState.ready } })
@@ -139,13 +132,17 @@ export function PlaybackTab({ item, folderId }: { item: ItemState; folderId: num
         </div>
       </section>
 
-      {!cacheState.ready ? (
+      {availability.isLoading ? (
+        <Loading label="Consultando a disponibilidade…" />
+      ) : availability.isError ? (
+        <ErrorState error={availability.error} onRetry={() => availability.refetch()} />
+      ) : !cacheState.ready ? (
         <div className="flex items-start gap-3 rounded-r border border-dashed border-line px-5 py-4 text-13 leading-normal text-muted">
           <Icon name="hourglass_empty" size={20} />
           <span>
             {cacheState.canQueue
               ? 'Este arquivo ainda não está em cache. Enfileire o download para ver as informações técnicas e testar a reprodução.'
-              : 'Download na fila. As informações técnicas e a reprodução ficam disponíveis quando o arquivo terminar de baixar; acompanhe na tela Cache.'}
+              : 'Download em andamento. As informações técnicas e a reprodução ficam disponíveis quando o arquivo terminar de baixar; acompanhe na tela Cache.'}
           </span>
         </div>
       ) : probe.isLoading ? (
