@@ -127,6 +127,12 @@ export function usePlaybackSession(video: React.RefObject<HTMLVideoElement | nul
       abort.current?.abort()
       const ctrl = new AbortController()
       abort.current = ctrl
+      // O transcode (re)iniciado apaga os segmentos anteriores: o player antigo sai antes da espera,
+      // senão segue buscando segmentos que não existem mais e acusa um erro fatal falso.
+      hls.current?.destroy()
+      hls.current = null
+      v.removeAttribute('src')
+      v.load()
       const next: ActiveSession = {
         id: s.sessionId,
         startOffset: s.startOffsetSeconds,
@@ -147,15 +153,21 @@ export function usePlaybackSession(video: React.RefObject<HTMLVideoElement | nul
       const src = apiUrl(s.playlistUrl)
       const local = Math.max(0, target - s.startOffsetSeconds)
       if (Hls.isSupported()) {
-        hls.current?.destroy()
         const h = new Hls({
-          // Segmentos ainda não gerados respondem 404: o player tenta de novo na borda ao vivo.
+          // Segmentos ainda não gerados respondem 404: o player tenta de novo na borda ao vivo. O
+          // hls.js não repete nenhum 4xx por padrão, daí o shouldRetry.
           fragLoadPolicy: {
             default: {
               maxTimeToFirstByteMs: 10_000,
               maxLoadTimeMs: 60_000,
               timeoutRetry: { maxNumRetry: 6, retryDelayMs: 1000, maxRetryDelayMs: 4000 },
-              errorRetry: { maxNumRetry: 10, retryDelayMs: 1000, maxRetryDelayMs: 4000 },
+              errorRetry: {
+                maxNumRetry: 10,
+                retryDelayMs: 1000,
+                maxRetryDelayMs: 4000,
+                shouldRetry: (cfg, count, _timeout, res, retry) =>
+                  retry || (res?.code === 404 && count < (cfg?.maxNumRetry ?? 0)),
+              },
             },
           },
           renderTextTracksNatively: true,

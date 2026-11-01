@@ -28,7 +28,8 @@ o TTL e o vencimento do heartbeat e um log de eventos que a aba mostra.
    `500 TRANSCODE_FAILED`, que diz que o transcode falhou e a playlist nunca vai sair.
 3. **Player** — com a playlist pronta, carrega no hls.js (ou no HLS nativo do Safari). Segmentos
    ainda não gerados também respondem `404`; o hls.js é configurado para tentar de novo na borda
-   ao vivo em vez de falhar. Se a sessão tem legenda, liga a primeira faixa de legenda do HLS.
+   ao vivo em vez de falhar (com um `shouldRetry` próprio, porque por padrão ele não repete
+   nenhum `4xx`). Se a sessão tem legenda, liga a primeira faixa de legenda do HLS.
 4. **Heartbeat** — o TTL vem do header `X-Playback-Heartbeat-Ttl-Seconds` da playlist e, depois,
    do corpo de cada heartbeat; nunca é fixo no portal. O hook pinga na metade do prazo (mínimo
    2 s). `404` no heartbeat marca a sessão como expirada; outro erro tenta de novo em 4 s.
@@ -36,6 +37,9 @@ o TTL e o vencimento do heartbeat e um log de eventos que a aba mostra.
    - `seek(posição)` pede ao backend; se o `startOffsetSeconds` devolvido mudou, o transcode
      recomeçou naquele ponto e o player recarrega a playlist; senão, só move o `currentTime`.
    - `switchTracks(faixas)` sempre reinicia o transcode na posição atual e recarrega o player.
+   - Toda recarga desliga o player antigo antes de esperar a playlist nova: o transcode reiniciado
+     apaga os segmentos anteriores, e o player antigo, ainda ligado, acusaria um erro fatal ao
+     buscá-los. Durante a espera a aba mostra "Preparando o vídeo…".
      A troca pede faixas concretas: as preferências só valem no início da sessão.
    - As faixas da sessão no portal são sempre as que o backend devolve (`audioTrackIndex` e
      `subtitleTrackIndex` da resposta do início, do seek e da troca), não as que o portal pediu.
