@@ -43,6 +43,6 @@ export interface AnimeRelationNode {
      */
   posterUrl?: string | null;
   folderId?: FolderId | null;
-  /** Classificação de raiz já decidida no backend a partir da curadoria + estrutura do grafo. A curadoria crua (`franchiseRootCuration`) vive no detalhe do anime, não no nó do grafo. */
+  /** Classificação de raiz já decidida no backend pela organização em franquias. A atribuição crua (`franchiseAssignment`) vive no detalhe do anime, não no nó do grafo. */
   rootKind: AnimeRootKind;
 }

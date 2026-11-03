@@ -8,6 +8,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { NotificationsProvider } from '@/features/notifications/NotificationsProvider'
 import { CachePage } from '@/pages/cache/CachePage'
 import { CatalogPage } from '@/pages/catalog/CatalogPage'
+import { FranchisesPage } from '@/pages/franchises/FranchisesPage'
 import { HomePage } from '@/pages/home/HomePage'
 import { IngestionPage } from '@/pages/ingestion/IngestionPage'
 import { ItemPage } from '@/pages/item/ItemPage'
@@ -24,6 +25,8 @@ const router = createBrowserRouter([
       { path: '/catalogo', element: <CatalogPage /> },
       { path: '/catalogo/:folderId', element: <Navigate to="anilist" replace /> },
       { path: '/catalogo/:folderId/:tab', element: <ItemPage /> },
+      { path: '/franquias', element: <FranchisesPage /> },
+      { path: '/franquias/:key', element: <FranchisesPage /> },
       { path: '/preferencias', element: <PreferencesPage /> },
       { path: '/cache', element: <CachePage /> },
       { path: '/provedores', element: <ProvidersPage /> },

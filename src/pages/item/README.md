@@ -2,13 +2,13 @@
 
 Tela **Item do catálogo** (`/catalogo/:folderId/:aba`): a curadoria de uma pasta e do anime
 vinculado a ela, em cinco abas. A lógica compartilhada entre as abas (estado do item, textos,
-ordenação dos arquivos, árvore da franquia) fica em [`src/features/item`](../../features/item/README.md), e a
+ordenação dos arquivos) fica em [`src/features/item`](../../features/item/README.md), e a
 sessão de reprodução em [`src/features/playback`](../../features/playback/README.md).
 
 | Arquivo                                | Papel                                                             |
 | -------------------------------------- | ----------------------------------------------------------------- |
 | [`ItemPage.tsx`](ItemPage.tsx)         | Cabeçalho, status de revisão, abas e as travas entre elas.        |
-| [`AnilistTab.tsx`](AnilistTab.tsx)     | Vínculo com a AniList, metadata, início da franquia e relações.   |
+| [`AnilistTab.tsx`](AnilistTab.tsx)     | Vínculo com a AniList, metadata e a franquia da obra.             |
 | [`TmdbTab.tsx`](TmdbTab.tsx)           | Vínculo com uma série ou filme do TMDB e a proposta do anibridge. |
 | [`OverridesTab.tsx`](OverridesTab.tsx) | Overrides de título, sinopse, pôster, backdrop e logo.            |
 | [`PairingTab.tsx`](PairingTab.tsx)     | Pareamento de cada arquivo com um episódio e as propostas.        |
@@ -35,15 +35,15 @@ sessão de reprodução em [`src/features/playback`](../../features/playback/REA
   AniList e no MyAnimeList (como o id da aba TMDB leva ao site do TMDB) e as ações Sincronizar (busca de novo na AniList), Trocar anime e
   Desvincular.
 - **Desvincular** — confirmação que lista o que se perde (dados da AniList, vínculo e overrides do
-  TMDB, relações, status de revisão e início da franquia) e o que fica (pasta, arquivos, pareamento
+  TMDB, relações, status de revisão e a franquia em que a obra está) e o que fica (pasta, arquivos, pareamento
   dos episódios e cache). O pareamento fica porque é ligado ao arquivo de vídeo, não ao anime.
   **Confirmado** (`tmdb_file_pairing.file_id` referencia `video_file`, em
   `V8__create-tmdb-file-pairing-table.sql` no backend).
-- **Início da franquia** — as três opções de curadoria (Automático, Sempre o início, Nunca o início)
-  e como o anime aparece hoje, pelo `rootKind` do backend.
-- **Relações da franquia** — a árvore montada por `relationsTree` (ver
-  [`src/features/item`](../../features/item/README.md#árvore-da-franquia-relationstreets)); clicar
-  numa obra que está na coleção abre o item dela.
+- **Franquia** — a franquia em que a obra está (a raiz, com pôster e título, ou "Início da
+  franquia" quando é a própria obra) e a atribuição (automática ou manual) com a explicação; na raiz
+  a atribuição não aparece, porque ela é início por ser raiz. Obra oculta mostra que não está em
+  franquia nenhuma, inclusive quando é por estar abaixo de uma oculta. "Gerenciar franquia" abre a
+  franquia na tela [Franquias](../franchises/README.md) (ou as ocultas).
 
 ## TMDB (`TmdbTab`)
 

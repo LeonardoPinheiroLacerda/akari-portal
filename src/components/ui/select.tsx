@@ -2,7 +2,8 @@ import * as SelectPrimitive from '@radix-ui/react-select'
 import { cn } from '@/lib/utils'
 import { Icon } from './icon'
 
-export type SelectOption = { value: string; label: React.ReactNode; disabled?: boolean }
+/** `hint` aparece só na lista aberta, abaixo do rótulo; o campo fechado mostra só o rótulo. */
+export type SelectOption = { value: string; label: React.ReactNode; hint?: React.ReactNode; disabled?: boolean }
 
 /** Radix não aceita value vazio; este sentinela representa "nenhum". */
 const EMPTY = '__empty__'
@@ -55,11 +56,13 @@ export function Select({ value, onChange, options, placeholder, className, size 
                 value={o.value === '' ? EMPTY : o.value}
                 disabled={o.disabled}
                 className={cn(
-                  'relative flex h-8 cursor-pointer select-none items-center rounded-rxs pl-2.5 pr-8 text-13 outline-none data-[disabled]:cursor-not-allowed data-[highlighted]:bg-raised data-[state=checked]:font-semibold data-[disabled]:opacity-50',
+                  'relative flex cursor-pointer select-none rounded-rxs pl-2.5 pr-8 text-13 outline-none data-[disabled]:cursor-not-allowed data-[highlighted]:bg-raised data-[state=checked]:font-semibold data-[disabled]:opacity-50',
+                  o.hint ? 'max-w-[300px] flex-col gap-0.5 py-1.5' : 'h-8 items-center',
                   mono && 'font-mono text-sm',
                 )}
               >
                 <SelectPrimitive.ItemText>{o.label}</SelectPrimitive.ItemText>
+                {o.hint && <span className="text-sm font-normal leading-[1.35] text-muted">{o.hint}</span>}
                 <SelectPrimitive.ItemIndicator className="absolute right-2 text-accent">
                   <Icon name="check" size={16} />
                 </SelectPrimitive.ItemIndicator>

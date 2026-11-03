@@ -20,7 +20,7 @@
  */
 
 /**
- * Tipo de raiz de franquia resolvido no backend. `MANUAL` = curadoria explícita (`franchiseRootCuration = MANUAL_ROOT`); `NATURAL` = curadoria automática (`franchiseRootCuration = AUTO`) e nenhuma relação ancestral (`PREQUEL` ou `PARENT`) sai do anime; `NOT_ROOT` = não é raiz (curadoria `MANUAL_NOT_ROOT`, ou `AUTO` com relação ancestral).
+ * Tipo de raiz de franquia resolvido no backend (regras em `GET /v1/metadata/franchises`). `MANUAL` = raiz de uma franquia manual; `NATURAL` = raiz que não foi criada à mão (anime `AUTO` sem pai automático, ou onde a subida detectou um ciclo); `NOT_ROOT` = não é raiz (pertence à franquia de outro anime, ou está fora de qualquer franquia).
  */
 export type AnimeRootKind = typeof AnimeRootKind[keyof typeof AnimeRootKind];
 

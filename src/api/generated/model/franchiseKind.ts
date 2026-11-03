@@ -20,16 +20,13 @@
  */
 
 /**
- * Curadoria da flag de raiz de franquia. `MANUAL_ROOT` força este anime como raiz, mesmo
- * com relação ancestral; `MANUAL_NOT_ROOT` força NÃO ser raiz (desabilita a raiz natural,
- * mesmo sem ancestral); `AUTO` deixa automático — é raiz quando não sai dele nenhuma
- * relação `PREQUEL` nem `PARENT`.
+ * Tipo de raiz. `MANUAL` = franquia criada à mão (`POST /v1/metadata/franchises`);
+ * `NATURAL` = as demais raízes.
  */
-export type FranchiseRootCuration = typeof FranchiseRootCuration[keyof typeof FranchiseRootCuration];
+export type FranchiseKind = typeof FranchiseKind[keyof typeof FranchiseKind];
 
 
-export const FranchiseRootCuration = {
-  AUTO: 'AUTO',
-  MANUAL_ROOT: 'MANUAL_ROOT',
-  MANUAL_NOT_ROOT: 'MANUAL_NOT_ROOT',
+export const FranchiseKind = {
+  NATURAL: 'NATURAL',
+  MANUAL: 'MANUAL',
 } as const;

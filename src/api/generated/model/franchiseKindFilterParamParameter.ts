@@ -18,9 +18,6 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { AnimeFranchiseRootRequest } from './animeFranchiseRootRequest';
+import type { FranchiseKind } from './franchiseKind';
 
-/**
- * Payload de curadoria da flag
- */
-export type AnimeFranchiseRootRequestBodyBody = AnimeFranchiseRootRequest;
+export type FranchiseKindFilterParamParameter = FranchiseKind;

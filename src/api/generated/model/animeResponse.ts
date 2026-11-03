@@ -22,7 +22,7 @@ import type { AnilistId } from './anilistId';
 import type { AnimeReviewStatus } from './animeReviewStatus';
 import type { AnimeThumbnailsResponse } from './animeThumbnailsResponse';
 import type { AnimeTitlesResponse } from './animeTitlesResponse';
-import type { FranchiseRootCuration } from './franchiseRootCuration';
+import type { FranchiseAssignment } from './franchiseAssignment';
 
 /**
  * Vista pública de um anime. `banner`/`logo` só são preenchidos quando há binding TMDB —
@@ -90,7 +90,12 @@ export interface AnimeResponse {
   isAdult?: boolean | null;
   /** @nullable */
   genres?: string[] | null;
-  franchiseRootCuration: FranchiseRootCuration;
+  franchiseAssignment: FranchiseAssignment;
+  /**
+     * Raiz da franquia à qual o anime pertence (`franchiseOf`); `null` se está fora de
+     * qualquer franquia (oculto, direto ou por herança)
+     */
+  franchiseRootId?: AnilistId | null;
   /** `null` até o auto-bind terminar de processar a pasta pela primeira vez */
   reviewStatus?: AnimeReviewStatus | null;
 }

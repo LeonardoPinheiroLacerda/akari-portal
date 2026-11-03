@@ -7,6 +7,7 @@ export const NAV = [
   { to: '/', label: 'Home', icon: 'home', end: true },
   // O Item de Catálogo só é aberto a partir do Catálogo; a entrada fica ativa nas páginas do item.
   { to: '/catalogo', label: 'Catálogo', icon: 'video_library' },
+  { to: '/franquias', label: 'Franquias', icon: 'account_tree' },
   { to: '/preferencias', label: 'Preferências', icon: 'tune' },
   { to: '/cache', label: 'Cache', icon: 'memory' },
   { to: '/provedores', label: 'Provedores', icon: 'dns' },

@@ -3,9 +3,8 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useSearchAnilistMedia } from '@/api/generated/endpoints/anilist-search/anilist-search'
-import { bindAnimeToFolder, deleteAnime, useSetAnimeFranchiseRoot, useSyncAnime } from '@/api/generated/endpoints/anime/anime'
-import { useGetAnimeRelationGraph } from '@/api/generated/endpoints/anime-relations/anime-relations'
-import type { AnilistMediaSummary, AnimeResponse, FranchiseRootCuration } from '@/api/generated/model'
+import { bindAnimeToFolder, deleteAnime, useGetAnime, useSyncAnime } from '@/api/generated/endpoints/anime/anime'
+import type { AnilistMediaSummary, AnimeResponse } from '@/api/generated/model'
 import { toastError } from '@/api/errors'
 import { invalidate } from '@/api/query'
 import { Button } from '@/components/ui/button'
@@ -13,12 +12,10 @@ import { Chip } from '@/components/ui/chip'
 import { Icon } from '@/components/ui/icon'
 import { Input, SearchInput } from '@/components/ui/input'
 import { ExternalLink, KeyValue, Pagination } from '@/components/ui/misc'
-import { RadioCard, RadioGroup } from '@/components/ui/radio'
 import { Section } from '@/components/ui/section'
 import { ErrorState, Loading } from '@/components/ui/states'
 import { Thumb } from '@/components/ui/thumb'
-import { FRANCHISE_ROOT, relationLabel, SEASON_LABEL } from '@/features/item/labels'
-import { buildFranchiseTree, findFranchiseRoot } from '@/features/item/relationsTree'
+import { ASSIGNMENT, SEASON_LABEL } from '@/features/item/labels'
 import type { ItemState } from '@/features/item/useItem'
 import { useDebounced } from '@/lib/useDebounced'
 import { cn } from '@/lib/utils'
@@ -27,7 +24,7 @@ const LOSES = [
   'Dados da AniList (títulos, sinopse, gêneros, nota)',
   'Vínculo com o TMDB e todos os overrides',
   'Ligações com outras obras da franquia',
-  'Status de revisão e definição de início da franquia',
+  'Status de revisão e a franquia em que a obra está',
 ]
 const KEEPS = ['A pasta e os arquivos de vídeo', 'Pareamento dos arquivos com episódios do TMDB', 'Arquivos já baixados no cache']
 
@@ -105,7 +102,7 @@ export function AnilistTab({ item, folderId }: { item: ItemState; folderId: numb
             }}
             onSynced={() => setLastAction(`Sincronizado com a AniList às ${timeNow()}.`)}
           />
-          <FranchiseRootCard anime={a} />
+          <FranchiseCard anime={a} />
         </div>
       )}
 
@@ -121,8 +118,6 @@ export function AnilistTab({ item, folderId }: { item: ItemState; folderId: numb
           }}
         />
       )}
-
-      {a && <RelationsTree anime={a} />}
     </>
   )
 }
@@ -244,68 +239,53 @@ function MetadataCard({
   )
 }
 
-function FranchiseRootCard({ anime: a }: { anime: AnimeResponse }) {
-  const mutation = useSetAnimeFranchiseRoot()
-  const graph = useGetAnimeRelationGraph(a.anilistId, { depth: 1 })
-  const node = graph.data?.nodes?.find((n) => n.anilistId === a.anilistId)
-  const kind = node?.rootKind
-
-  const set = (v: FranchiseRootCuration) => {
-    if (v === a.franchiseRootCuration) return
-    mutation.mutate(
-      { anilistId: a.anilistId, data: { franchiseRootCuration: v } },
-      {
-        onSuccess: async () => {
-          await invalidate.anime()
-          toast.success('Início da franquia atualizado')
-        },
-        onError: (e) => toastError(e),
-      },
-    )
-  }
+/** A franquia em que a obra está, com o atalho para organizá-la na tela Franquias. */
+function FranchiseCard({ anime: a }: { anime: AnimeResponse }) {
+  const navigate = useNavigate()
+  const rootId = a.franchiseRootId
+  const isRoot = rootId === a.anilistId
+  const root = useGetAnime(rootId ?? 0, { query: { enabled: rootId != null && !isRoot } })
+  const rootAnime = isRoot ? a : root.data
+  const assignment = ASSIGNMENT[a.franchiseAssignment]
 
   return (
-    <section className="card min-w-0 flex-[1_1_280px] overflow-hidden">
+    <section className="card flex min-w-0 flex-[1_1_280px] flex-col overflow-hidden">
       <div className="flex flex-col gap-0.5 border-b border-line px-5 py-3.5">
-        <h3 className="m-0 text-15 font-semibold">Início da franquia</h3>
-        <span className="text-sm leading-[1.4] text-muted">
-          Define se este anime aparece na coleção como a entrada principal da franquia, agrupando sequências e spin-offs.
-        </span>
+        <h3 className="m-0 text-15 font-semibold">Franquia</h3>
+        <span className="text-sm leading-[1.4] text-muted">Com quais obras este anime aparece agrupado nos clientes.</span>
       </div>
-      <RadioGroup
-        value={a.franchiseRootCuration}
-        onValueChange={(v) => set(v as FranchiseRootCuration)}
-        className="gap-1 p-2.5"
-        disabled={mutation.isPending}
-      >
-        {(Object.keys(FRANCHISE_ROOT) as FranchiseRootCuration[]).map((k) => (
-          <RadioCard key={k} value={k} checked={a.franchiseRootCuration === k} className="border-0 p-2.5">
-            <span className="flex flex-col gap-0.5">
-              <span className="text-13 font-semibold">{FRANCHISE_ROOT[k].label}</span>
-              <span className="text-sm leading-[1.4] text-muted">{FRANCHISE_ROOT[k].hint}</span>
-            </span>
-          </RadioCard>
-        ))}
-      </RadioGroup>
-      <div className="flex items-center gap-2 border-t border-line px-5 py-3 text-13">
-        {kind == null ? (
-          <span className="text-muted">Calculando…</span>
+      <div className="flex flex-1 flex-col gap-3 px-5 py-4 text-13">
+        {rootId == null ? (
+          <span className="leading-normal text-muted">
+            <b className="text-text">Oculta</b>:{' '}
+            {a.franchiseAssignment === 'HIDDEN'
+              ? 'esta obra está fora de qualquer franquia.'
+              : 'a obra de que esta deriva está oculta, e ela vai junto.'}{' '}
+            Os clientes não a listam.
+          </span>
         ) : (
-          <>
-            <Icon
-              name={kind === 'NOT_ROOT' ? 'subdirectory_arrow_right' : 'flag'}
-              size={18}
-              className={kind === 'NOT_ROOT' ? 'text-muted' : 'text-accent'}
-            />
-            <span>
-              {kind === 'NOT_ROOT'
-                ? 'Hoje aparece agrupado dentro de outra franquia.'
-                : kind === 'MANUAL'
-                  ? 'Hoje aparece como início da franquia (definido manualmente).'
-                  : 'Hoje aparece como início da franquia (sem temporada anterior).'}
-            </span>
-          </>
+          <div className="flex items-center gap-3">
+            <Thumb src={rootAnime?.thumbnails?.medium ?? rootAnime?.thumbnails?.large} width={40} />
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span className="text-sm text-muted">{isRoot ? 'Início da franquia' : 'Faz parte da franquia de'}</span>
+              <span className="font-semibold">{rootAnime?.titles?.main ?? `AniList ${rootId}`}</span>
+            </div>
+          </div>
         )}
+        {/* No início da franquia a atribuição não diz nada: é início por ser raiz (natural ou manual). */}
+        {!isRoot && (
+          <span className="flex flex-wrap items-center gap-2 text-sm text-muted">
+            <Chip tone={assignment.tone} className="h-5 text-xs">
+              {assignment.label}
+            </Chip>
+            {assignment.hint}
+          </span>
+        )}
+      </div>
+      <div className="border-t border-line px-5 py-3">
+        <Button size="sm" icon="account_tree" onClick={() => navigate(`/franquias/${rootId ?? 'ocultas'}`)}>
+          Gerenciar franquia
+        </Button>
       </div>
     </section>
   )
@@ -516,97 +496,6 @@ function AnilistSearch({
       })}
       {search.data && search.data.totalPages > 1 && (
         <Pagination page={page} totalPages={search.data.totalPages} size={8} onPage={setPage} className="border-t border-line" />
-      )}
-    </Section>
-  )
-}
-
-function RelationsTree({ anime: a }: { anime: AnimeResponse }) {
-  const navigate = useNavigate()
-  const own = useGetAnimeRelationGraph(a.anilistId)
-  const rootId = own.data ? findFranchiseRoot(own.data, a.anilistId) : undefined
-  const rootGraph = useGetAnimeRelationGraph(rootId ?? 0, { depth: 4 }, { query: { enabled: rootId != null } })
-  const graph = rootGraph.data ?? (rootId === a.anilistId ? own.data : undefined)
-  const groups = useMemo(() => (graph && rootId != null ? buildFranchiseTree(graph, rootId) : []), [graph, rootId])
-
-  return (
-    <Section
-      title="Relações da franquia"
-      subtitle="Ordem de lançamento da franquia, com as obras derivadas abaixo de cada entrada."
-    >
-      {(own.isLoading || rootGraph.isLoading) && <Loading />}
-      {own.isError && <ErrorState error={own.error} onRetry={() => own.refetch()} />}
-      {graph && (
-        <div className="flex flex-col gap-3.5 px-5 pb-[18px] pt-3.5">
-          {groups.map((g) => (
-            <div key={g.key} className="flex flex-col gap-1.5">
-              <span className="group-label">{g.label}</span>
-              {g.items.map((it) => {
-                const n = it.node
-                const cur = n.anilistId === a.anilistId
-                const inColl = n.folderId != null
-                const isRoot = n.rootKind !== 'NOT_ROOT'
-                return (
-                  <div
-                    key={`${g.key}-${n.anilistId}`}
-                    className="flex items-stretch"
-                    style={{ paddingLeft: it.level ? (it.level - 1) * 28 + 28 : 0 }}
-                  >
-                    {!!it.level && (
-                      <div className="relative w-[22px] shrink-0">
-                        <div className="absolute bottom-1/2 left-2 top-[-6px] w-3 rounded-bl-[6px] border-b-2 border-l-2 border-line" />
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      disabled={!inColl || cur}
-                      onClick={() => navigate(`/catalogo/${n.folderId}/anilist`)}
-                      className={cn(
-                        'flex min-w-0 flex-1 items-center gap-3 rounded-rs px-3 py-2 text-left transition-colors',
-                        cur
-                          ? 'border-2 border-accent bg-tint'
-                          : inColl
-                            ? 'border border-line bg-bg hover:border-muted'
-                            : 'cursor-default border border-dashed border-line',
-                      )}
-                    >
-                      <span className="w-6 shrink-0 text-center font-mono text-13 font-bold text-muted">{it.num ?? ''}</span>
-                      <Thumb src={n.posterUrl} width={30} />
-                      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold">{n.title ?? `AniList ${n.anilistId}`}</span>
-                          {cur && (
-                            <Chip tone="accent" className="h-[18px] text-xs font-bold">
-                              Este anime
-                            </Chip>
-                          )}
-                          {isRoot && (
-                            <span className="flex items-center gap-[3px] text-xs font-semibold text-accent-text">
-                              <Icon name="flag" size={14} />
-                              Início da franquia
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-sm text-muted">
-                          {[
-                            it.relation ? relationLabel(it.relation) : g.key === 'other' ? 'Relacionada' : 'Primeira entrada',
-                            `AniList ${n.anilistId}`,
-                          ].join(' · ')}
-                        </span>
-                      </div>
-                      <Chip tone={inColl ? 'ok' : 'neutral'} dashed={!inColl} className="h-5 text-xs">
-                        {inColl ? 'Na coleção' : 'Fora da coleção'}
-                      </Chip>
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-          ))}
-          {groups.every((g) => g.items.length <= 1) && (
-            <span className="text-13 text-muted">Nenhuma outra obra relacionada na AniList.</span>
-          )}
-        </div>
       )}
     </Section>
   )

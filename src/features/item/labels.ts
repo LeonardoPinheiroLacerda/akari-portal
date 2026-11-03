@@ -1,4 +1,4 @@
-import type { AnimeReviewStatus, FranchiseRootCuration, MediaType } from '@/api/generated/model'
+import type { AnimeReviewStatus, FranchiseAssignment, MediaType } from '@/api/generated/model'
 import type { Tone } from '@/components/ui/chip'
 
 /** Tipo da pasta como aparece na interface. */
@@ -12,19 +12,16 @@ export const REVIEW: Record<AnimeReviewStatus, { label: string; tone: Tone }> = 
 
 export const reviewInfo = (s?: AnimeReviewStatus | null) => (s ? REVIEW[s] : { label: 'Processando', tone: 'neutral' as Tone })
 
-export const FRANCHISE_ROOT: Record<FranchiseRootCuration, { label: string; hint: string }> = {
+/** Atribuição de franquia de um anime: como ele entra (ou não) numa franquia. */
+export const ASSIGNMENT: Record<FranchiseAssignment, { label: string; hint: string; tone: Tone }> = {
   AUTO: {
-    label: 'Automático',
-    hint: 'Decidido pelas relações da AniList: é o início se não tiver temporada anterior nem obra principal.',
+    label: 'Automática',
+    hint: 'Fica na franquia do pai automático (a obra anterior, a principal ou a de que deriva, pelas relações da AniList).',
+    tone: 'neutral',
   },
-  MANUAL_ROOT: {
-    label: 'Sempre o início',
-    hint: 'Mostrar este anime como entrada principal, mesmo sendo continuação de outro.',
-  },
-  MANUAL_NOT_ROOT: {
-    label: 'Nunca o início',
-    hint: 'Agrupar este anime dentro de outra franquia, mesmo sem temporada anterior.',
-  },
+  MANUAL_MEMBER: { label: 'Manual', hint: 'Posta à mão nesta franquia.', tone: 'info' },
+  MANUAL_ROOT: { label: 'Manual', hint: 'Início de uma franquia criada à mão.', tone: 'info' },
+  HIDDEN: { label: 'Oculta', hint: 'Fora de qualquer franquia: os clientes não a listam.', tone: 'warn' },
 }
 
 export const RELATION_LABEL: Record<string, string> = {

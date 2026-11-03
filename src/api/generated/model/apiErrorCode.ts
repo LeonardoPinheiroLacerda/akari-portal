@@ -28,6 +28,8 @@
  *   negócio.
  * - `RESOURCE_NOT_FOUND` (404): o recurso não existe (ou a rota não existe / um
  *   parâmetro de path não pôde ser convertido).
+ * - `CONFLICT` (409): o recurso que se quer criar já existe ou o estado atual impede a
+ *   operação.
  * - `REQUEST_ERROR` (405, 406, 415, ...): requisição incompatível com o endpoint —
  *   método, `Content-Type` ou `Accept` não suportados.
  * - `INTEGRATION_ERROR` (502): um sistema externo (AniList, TMDB, rclone, ffprobe)
@@ -47,6 +49,7 @@ export const ApiErrorCode = {
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   BUSINESS_RULE_VIOLATION: 'BUSINESS_RULE_VIOLATION',
   RESOURCE_NOT_FOUND: 'RESOURCE_NOT_FOUND',
+  CONFLICT: 'CONFLICT',
   REQUEST_ERROR: 'REQUEST_ERROR',
   INTEGRATION_ERROR: 'INTEGRATION_ERROR',
   INTEGRATION_NOT_CONFIGURED: 'INTEGRATION_NOT_CONFIGURED',

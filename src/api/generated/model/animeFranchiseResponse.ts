@@ -28,22 +28,19 @@ export interface AnimeFranchiseResponse {
   /** Raiz da franquia, mesmo quando o anime consultado é outra temporada */
   root: AnimeResponse;
   /**
-     * A raiz mais a cadeia de `SEQUEL` a partir dela, na ordem da cadeia, só com
-     * formato de série (`TV`, `TV_SHORT`, `ONA`)
+     * A raiz mais a cadeia de `SEQUEL` a partir dela entre os membros, na ordem da cadeia,
+     * só com formato de série (`TV`, `TV_SHORT`, `ONA`)
      * @nullable
      */
   seasons?: AnimeResponse[] | null;
   /**
-     * Filmes da franquia (formato `MOVIE`) — mesma origem de `specials` (`SIDE_STORY`,
-     * `SPIN_OFF`, `SUMMARY`, mais os da cadeia de `SEQUEL` sem formato de série), só que
-     * separados por formato. Ordenados por `year`/`season`
+     * Membros fora de `seasons` com formato `MOVIE`. Ordenados por `year`/`season`
      * @nullable
      */
   movies?: AnimeResponse[] | null;
   /**
-     * Demais animes da franquia sem formato de série e sem ser filme (`OVA`, `SPECIAL`,
-     * ...) — `SIDE_STORY`, `SPIN_OFF`, `SUMMARY`, mais os da cadeia de `SEQUEL` nesses
-     * formatos. Ordenados por `year`/`season`
+     * Membros fora de `seasons` de qualquer outro formato (`OVA`, `SPECIAL`, `TV` fora da
+     * cadeia, ...). Ordenados por `year`/`season`
      * @nullable
      */
   specials?: AnimeResponse[] | null;

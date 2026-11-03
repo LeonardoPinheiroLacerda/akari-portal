@@ -35,6 +35,14 @@ export const invalidate = {
       '/v1/metadata/anime-relations',
     ),
   tmdb: (anilistId: number) => invalidatePrefixes(`/v1/metadata/animes/${anilistId}/tmdb`),
+  // Mexer na franquia de uma obra muda outras franquias, a franquia do anime e as raízes listadas.
+  franchises: () =>
+    invalidatePrefixes(
+      '/v1/metadata/franchises',
+      '/v1/metadata/animes/',
+      '/v1/metadata/folders/',
+      '/v1/metadata/anime-relations',
+    ),
   videoFiles: () => invalidatePrefixes('/v1/catalog/video-files'),
   providers: () => invalidatePrefixes('/v1/storage/providers'),
   notifications: () => invalidatePrefixes('/v1/notifications'),

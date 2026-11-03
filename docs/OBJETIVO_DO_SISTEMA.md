@@ -36,16 +36,19 @@ se referem a esse app futuro.
 2. **Ingerir um diretório** do provedor no catálogo, escolhendo o tipo do conteúdo — tela Ingestão.
    O backend cria as pastas e arquivos e tenta vincular tudo; o resultado chega por notificação.
 3. **Curar os títulos** — Catálogo (filtrando por pendências de curadoria) → item do catálogo:
-   1. AniList: confirmar ou trocar o anime vinculado, ajustar o início da franquia;
+   1. AniList: confirmar ou trocar o anime vinculado;
    2. TMDB: vincular a série ou o filme;
    3. Overrides: escolher título, sinopse, pôster, backdrop e logo;
    4. Pareamento: ligar cada arquivo ao episódio do TMDB (à mão ou por continuidade);
    5. marcar o título como revisado.
-4. **Testar a reprodução** — aba Reprodução; arquivo de provedor remoto precisa ser baixado para o
+4. **Organizar as franquias** — tela Franquias: cada obra pertence a uma franquia só; a regra
+   automática do backend é o ponto de partida, e o admin move obras entre franquias, cria franquias
+   próprias, junta franquias ou oculta obras.
+5. **Testar a reprodução** — aba Reprodução; arquivo de provedor remoto precisa ser baixado para o
    cache antes.
-5. **Acompanhar** — Home (resumo e títulos pendentes), Cache (fila e arquivos baixados) e
+6. **Acompanhar** — Home (resumo e títulos pendentes), Cache (fila e arquivos baixados) e
    Notificações (resultado de ingestões e falhas de vínculo).
-6. **Ajustar preferências** do backend (diretórios, cache, reprodução, TMDB, AniList).
+7. **Ajustar preferências** do backend (diretórios, cache, reprodução, TMDB, AniList).
 
 ## Atores envolvidos
 
@@ -62,10 +65,12 @@ se referem a esse app futuro.
 - Ingestão de diretórios e remoção do que foi ingerido, com navegador de pastas do provedor.
 - Catálogo com busca, ordenação e filtros de curadoria (status de revisão, vínculo AniList, vínculo
   TMDB, episódios pareados).
-- Curadoria do item em abas: AniList (vínculo, início da franquia, árvore de relações), TMDB,
+- Curadoria do item em abas: AniList (vínculo e a franquia em que a obra está), TMDB,
   Overrides (com visualização das imagens em tamanho original), Pareamento de episódios (com as
   propostas do anibridge e por continuidade, calculadas no backend) e Reprodução.
 - Status de revisão de cada título, visível e acionável em todas as abas.
+- Organização das franquias: lista com busca por qualquer obra, grafo das relações, prévia de como
+  os clientes mostram a franquia e as ações de mover, remover, juntar e ocultar.
 - Cache de vídeo ao vivo: fila de downloads com progresso, tentar de novo, cancelar, deletar e ações
   em massa.
 - Notificações ao vivo, com contador de não lidas e atalho para o título.
@@ -79,7 +84,7 @@ se referem a esse app futuro.
 - **Sem jargão.** Textos em português, sem nomes de endpoint nem valores técnicos crus na
   interface (status e tipos aparecem traduzidos).
 - **O backend decide.** Regras de negócio ficam no backend; as poucas que ainda são calculadas no
-  portal (árvore da franquia, ações em massa do cache, troca de vínculo) são **Backlog
+  portal (ações em massa do cache, troca de vínculo) são **Backlog
   real** (confirmado pelo mantenedor) para migrar para o backend aos poucos.
 
 ## Contexto operacional do sistema

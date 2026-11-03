@@ -115,6 +115,27 @@
   .group-label {
     @apply text-xs uppercase tracking-[.06em] text-muted;
   }
+  /* React Flow (grafo da franquia). Rótulos das setas acima dos nós (os nós usam z-index inline
+     até 1000 quando selecionados). */
+  .akari-flow .react-flow__edgelabel-renderer {
+    z-index: 1001;
+  }
+  /* Controles com as cores do tema. */
+  .akari-flow .react-flow__controls {
+    @apply overflow-hidden rounded-rs border border-line shadow-modal;
+  }
+  .akari-flow .react-flow__controls-button {
+    @apply border-r border-line bg-panel text-text hover:bg-raised;
+  }
+  .akari-flow .react-flow__controls-button svg {
+    fill: currentColor;
+  }
+  .akari-flow .react-flow__attribution {
+    @apply bg-transparent text-2xs text-muted;
+  }
+  .akari-flow .react-flow__attribution a {
+    color: inherit;
+  }
   .card {
     @apply rounded-r border border-line bg-panel;
   }

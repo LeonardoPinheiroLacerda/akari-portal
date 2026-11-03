@@ -18,11 +18,9 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { FranchiseRootCuration } from './franchiseRootCuration';
+import type { FranchiseDetail } from './franchiseDetail';
 
 /**
- * Payload da curadoria manual da raiz de franquia
+ * Franquia manual criada
  */
-export interface AnimeFranchiseRootRequest {
-  franchiseRootCuration: FranchiseRootCuration;
-}
+export type FranchiseDetailCreatedResponse = FranchiseDetail;

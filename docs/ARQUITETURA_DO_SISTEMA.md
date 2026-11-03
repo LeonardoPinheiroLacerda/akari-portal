@@ -99,7 +99,7 @@ lib  ◄── todas as camadas
   em tamanho original depende do formato da URL do TMDB (**Backlog real**: a API deveria entregar
   essa URL).
 - **Bibliotecas centrais** — React, React Router, TanStack Query, Orval, hls.js, Radix UI, Tailwind,
-  React Hook Form, Zod, Sonner, DOMPurify (sinopse da AniList).
+  React Hook Form, Zod, Sonner, DOMPurify (sinopse da AniList), React Flow (grafo da tela Franquias).
 
 ## Riscos técnicos e acoplamentos importantes
 
@@ -108,9 +108,9 @@ READMEs:
 
 - catálogo de tipos de provedor e seus campos (`features/providers`);
 - metadados das preferências (rótulo, tipo, valores aceitos) (`pages/preferences`);
-- árvore de relações da franquia, com as limitações conhecidas (`features/item`);
 - troca de vínculo AniList/TMDB em duas chamadas não atômicas, legenda selecionável ou queimada
   deduzida pelo codec (`pages/item`);
+- troca do início de uma franquia em duas chamadas não atômicas (`pages/franchises`);
 - ações em massa do cache, um `DELETE` por linha (`pages/cache`).
 
 **Lacunas do contrato ou do backend que afetam o portal** — **Backlog real**, correção no `akari`:
@@ -118,6 +118,8 @@ READMEs:
 - remover um provedor que ainda tem pastas falha por chave estrangeira (`pages/providers`);
 - remover um trecho do catálogo deixa os arquivos em cache órfãos no disco (`pages/ingestion`);
 - `404` ambíguo na reprodução (`features/playback`);
+- `AnimeResponse` sem a pasta do anime: os links da tela Franquias dependem do grafo de relações
+  (`pages/franchises`);
 - chamadas sem timeout no mutator (`src/api`).
 
 **Outros acoplamentos aceitos** (**Aceito**, confirmado pelo mantenedor): invalidação por grupo

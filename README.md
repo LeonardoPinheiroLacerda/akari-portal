@@ -7,6 +7,7 @@ o admin:
 - ingere diretórios no catálogo;
 - faz a curadoria dos títulos: vínculo com a AniList e o TMDB, overrides de título, sinopse e
   imagens, pareamento dos arquivos com os episódios do TMDB e status de revisão;
+- organiza as obras em franquias;
 - testa a reprodução;
 - acompanha o cache de vídeo e as notificações;
 - ajusta as preferências do sistema.
@@ -31,6 +32,7 @@ contrato entre os dois é o OpenAPI do backend (`src/main/resources/META-INF/ope
   em `/q/openapi`, em `src/api/generated`.
 - **EventSource (SSE)** nativo para os streams `/v1/cache/events` e `/v1/notifications/events`.
 - **hls.js** no player da aba Reprodução.
+- **React Flow** (`@xyflow/react`) no grafo da tela Franquias, com layout próprio.
 - **Tailwind CSS** com os tokens do design em variáveis CSS (tema escuro e claro), e componentes
   sobre **Radix UI**.
 - **React Hook Form + Zod** nos formulários; **Sonner** para as notificações na tela.
@@ -96,6 +98,7 @@ src/
 | `/`                        | Home                                                                                  |
 | `/catalogo`                | Catálogo de pastas, com filtros de curadoria                                          |
 | `/catalogo/:folderId/:aba` | Item do catálogo: abas AniList, TMDB, TMDB Overrides, TMDB Episódio Pair e Reprodução |
+| `/franquias/:key?`         | Franquias: a lista, uma franquia (pelo `anilistId` da raiz) ou as obras ocultas       |
 | `/cache`                   | Fila de downloads e arquivos em cache                                                 |
 | `/provedores`              | Provedores de arquivos                                                                |
 | `/ingestao`                | Ingestão de diretórios                                                                |
