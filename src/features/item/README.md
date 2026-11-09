@@ -37,8 +37,8 @@ para travar as abas que dependem de um vínculo anterior.
 - `RELATION_LABEL` / `relationLabel` — nome em português de cada tipo de relação da AniList; um
   tipo desconhecido aparece com o valor cru.
 - `SEASON_LABEL` — estações do ano da AniList.
-- `TMDB_LOCALES` e `ISO639` — idiomas oferecidos nos seletores (idioma da busca no TMDB e as
-  preferências de idioma do TMDB). São uma seleção dos idiomas mais comuns, não a lista completa
+- `TMDB_LOCALES` — idiomas com país (`pt-BR`) oferecidos nos seletores (idioma da busca no TMDB e
+  as preferências de idioma do TMDB). São uma seleção dos idiomas mais comuns, não a lista completa
   do TMDB. **Aceito** (confirmado pelo mantenedor): a seleção cobre o uso real; um idioma novo
   entra na lista quando for preciso.
 - `ISO639_2` — idiomas das preferências de faixa padrão da reprodução, no código de 3 letras da tag

@@ -72,25 +72,6 @@ export const TMDB_LOCALES: [string, string][] = [
   ['tr-TR', 'Turco'],
 ]
 
-export const ISO639: [string, string][] = [
-  ['ja', 'Japonês'],
-  ['en', 'Inglês'],
-  ['pt', 'Português'],
-  ['es', 'Espanhol'],
-  ['fr', 'Francês'],
-  ['de', 'Alemão'],
-  ['it', 'Italiano'],
-  ['ko', 'Coreano'],
-  ['zh', 'Chinês'],
-  ['ru', 'Russo'],
-  ['ar', 'Árabe'],
-  ['hi', 'Hindi'],
-  ['th', 'Tailandês'],
-  ['id', 'Indonésio'],
-  ['pl', 'Polonês'],
-  ['tr', 'Turco'],
-]
-
 /** Idiomas das faixas de áudio e legenda, no código ISO 639-2/B da tag `language` dos arquivos (Matroska). */
 export const ISO639_2: [string, string][] = [
   ['jpn', 'Japonês'],

@@ -13,12 +13,12 @@ import { Segmented } from '@/components/ui/segmented'
 import { Select } from '@/components/ui/select'
 import { ErrorState, Loading } from '@/components/ui/states'
 import { Switch } from '@/components/ui/switch'
-import { ISO639, ISO639_2, TMDB_LOCALES } from '@/features/item/labels'
+import { ISO639_2, TMDB_LOCALES } from '@/features/item/labels'
 import { formatRelative, humanizeIsoDuration } from '@/lib/format'
 import { useDebounced } from '@/lib/useDebounced'
 import { cn } from '@/lib/utils'
 
-type Kind = 'path' | 'bytes' | 'duration' | 'enum' | 'secret' | 'locale' | 'lang' | 'trackLang' | 'bool' | 'text'
+type Kind = 'path' | 'bytes' | 'duration' | 'enum' | 'secret' | 'locale' | 'tmdbLang' | 'langList' | 'trackLang' | 'bool' | 'text'
 type Meta = {
   label: string
   hint: string
@@ -28,29 +28,58 @@ type Meta = {
   options?: string[]
   /** Rótulo de cada opção do `enum`; sem ele, a opção mostra o próprio valor. */
   optionLabels?: Record<string, string>
-  /** Rótulo da opção vazia do `trackLang`, quando vazio é um valor válido (não "não configurado"). */
+  /** Rótulo da opção vazia do `trackLang`/`tmdbLang`, quando vazio é um valor válido (não "não configurado"). */
   emptyLabel?: string
 }
 
+/** A ordem das chaves aqui é a ordem em que aparecem na tela, dentro de cada grupo. */
 const META: Record<string, Meta> = {
-  'cache.dir': {
-    label: 'Diretório do cache',
-    hint: 'Onde os arquivos de vídeo baixados são guardados.',
-    kind: 'path',
-    width: 320,
-    placeholder: '/var/lib/akari/cache',
-  },
-  'cache.max-size-bytes': {
-    label: 'Tamanho máximo do cache',
-    hint: 'Orçamento de espaço em disco para o cache local, em bytes.',
-    kind: 'bytes',
+  'tmdb.api-key': { label: 'Token de API', hint: 'Necessário para buscas e pareamento no TMDB.', kind: 'secret', width: 280 },
+  'tmdb.default-language': {
+    label: 'Idioma padrão',
+    hint: 'Idioma das buscas e metadados retornados pelo TMDB.',
+    kind: 'locale',
     width: 260,
   },
-  'playback.transcode.hardware-acceleration': {
-    label: 'Aceleração de hardware',
-    hint: 'Método usado pelo FFmpeg no transcode durante a reprodução.',
-    kind: 'enum',
-    options: ['NONE', 'VIDEOTOOLBOX', 'NVENC', 'QSV', 'VAAPI'],
+  'tmdb.include-adult': { label: 'Incluir conteúdo adulto', hint: 'Inclui resultados adultos nas buscas do TMDB.', kind: 'bool' },
+  'tmdb.override.title-language': {
+    label: 'Idioma do título',
+    hint: 'Título que a ingestão traz do TMDB. Sem tradução nesse idioma, usa o de fallback; "Manter o da AniList" não preenche.',
+    kind: 'tmdbLang',
+    width: 260,
+    emptyLabel: 'Manter o da AniList',
+  },
+  'tmdb.override.synopsis-language': {
+    label: 'Idioma da sinopse',
+    hint: 'Sinopse que a ingestão traz do TMDB. Sem tradução nesse idioma, usa o de fallback; "Manter a da AniList" não preenche.',
+    kind: 'tmdbLang',
+    width: 260,
+    emptyLabel: 'Manter a da AniList',
+  },
+  'tmdb.override.fallback-language': {
+    label: 'Idioma de fallback',
+    hint: 'Usado no título, na sinopse e no backdrop quando o TMDB não tem opção no idioma escolhido.',
+    kind: 'tmdbLang',
+    width: 260,
+    emptyLabel: 'Sem fallback',
+  },
+  'tmdb.image.logo-language': {
+    label: 'Idiomas do logo',
+    hint: 'Ordem de preferência do logo que a ingestão traz do TMDB: fica o do primeiro idioma que tiver logo. Não usa o fallback.',
+    kind: 'langList',
+    width: 260,
+  },
+  'tmdb.cache.ttl': {
+    label: 'Validade do cache de respostas',
+    hint: 'Por quanto tempo as respostas do TMDB ficam em cache (ISO-8601, ex.: P7D).',
+    kind: 'duration',
+    width: 160,
+  },
+  'anilist.cache.ttl': {
+    label: 'Validade do cache de respostas',
+    hint: 'Por quanto tempo as respostas da AniList ficam em cache (ISO-8601, ex.: P7D).',
+    kind: 'duration',
+    width: 160,
   },
   'playback.default.audio-language': {
     label: 'Idioma do áudio padrão',
@@ -72,11 +101,11 @@ const META: Record<string, Meta> = {
     options: ['false', 'true'],
     optionLabels: { false: 'Completa', true: 'Forçada' },
   },
-  'playback.session.heartbeat-ttl': {
-    label: 'Tempo da sessão sem sinal',
-    hint: 'Quanto tempo uma reprodução continua ativa sem sinal do player (ISO-8601, ex.: PT30S).',
-    kind: 'duration',
-    width: 160,
+  'playback.transcode.hardware-acceleration': {
+    label: 'Aceleração de hardware',
+    hint: 'Método usado pelo FFmpeg no transcode durante a reprodução.',
+    kind: 'enum',
+    options: ['NONE', 'VIDEOTOOLBOX', 'NVENC', 'QSV', 'VAAPI'],
   },
   'playback.work.base-dir': {
     label: 'Diretório de trabalho',
@@ -85,46 +114,44 @@ const META: Record<string, Meta> = {
     width: 320,
     placeholder: '/var/lib/akari/playback',
   },
-  'tmdb.api-key': { label: 'Token de API', hint: 'Necessário para buscas e pareamento no TMDB.', kind: 'secret', width: 280 },
-  'tmdb.default-language': {
-    label: 'Idioma padrão',
-    hint: 'Idioma das buscas e metadados retornados pelo TMDB.',
-    kind: 'locale',
-    width: 260,
-  },
-  'tmdb.image.logo-language': {
-    label: 'Idioma do logo',
-    hint: 'Idioma preferido para o logo do título.',
-    kind: 'lang',
-    width: 260,
-  },
-  'tmdb.image.backdrop-language': {
-    label: 'Idioma do backdrop',
-    hint: 'Vazio usa backdrops sem texto.',
-    kind: 'lang',
-    width: 260,
-  },
-  'tmdb.include-adult': { label: 'Incluir conteúdo adulto', hint: 'Inclui resultados adultos nas buscas do TMDB.', kind: 'bool' },
-  'tmdb.cache.ttl': {
-    label: 'Validade do cache de respostas',
-    hint: 'Por quanto tempo as respostas do TMDB ficam em cache (ISO-8601, ex.: P7D).',
+  'playback.session.heartbeat-ttl': {
+    label: 'Tempo da sessão sem sinal',
+    hint: 'Quanto tempo uma reprodução continua ativa sem sinal do player (ISO-8601, ex.: PT30S).',
     kind: 'duration',
     width: 160,
   },
-  'anilist.cache.ttl': {
-    label: 'Validade do cache de respostas',
-    hint: 'Por quanto tempo as respostas da AniList ficam em cache (ISO-8601, ex.: P7D).',
-    kind: 'duration',
-    width: 160,
+  'cache.dir': {
+    label: 'Diretório do cache',
+    hint: 'Onde os arquivos de vídeo baixados são guardados.',
+    kind: 'path',
+    width: 320,
+    placeholder: '/var/lib/akari/cache',
+  },
+  'cache.max-size-bytes': {
+    label: 'Tamanho máximo do cache',
+    hint: 'Orçamento de espaço em disco para o cache local, em bytes.',
+    kind: 'bytes',
+    width: 260,
   },
 }
 
 const GROUPS: [string, string][] = [
-  ['cache', 'Cache de vídeo'],
-  ['playback', 'Reprodução'],
   ['tmdb', 'TMDB'],
   ['anilist', 'AniList'],
+  ['playback', 'Reprodução'],
+  ['cache', 'Cache de vídeo'],
 ]
+
+const ORDER = Object.keys(META)
+/** Chaves do `META` na ordem dele; as desconhecidas vão para o fim, na ordem da API. */
+const rank = (key: string) => {
+  const i = ORDER.indexOf(key)
+  return i < 0 ? ORDER.length : i
+}
+
+const TMDB_LANG_OPTIONS = TMDB_LOCALES.map(([v, l]) => ({ value: v, label: `${v} · ${l}` }))
+/** `none` é o logo sem idioma. */
+const LOGO_LANG_OPTIONS = [{ value: 'none', label: 'none · Sem idioma (sem texto)' }, ...TMDB_LANG_OPTIONS]
 
 const metaFor = (s: SettingResponse): Meta =>
   META[s.key] ??
@@ -140,7 +167,7 @@ export function PreferencesPage() {
   }, [name, setSp])
 
   const query = useListSettings(name ? { name } : undefined, { query: { placeholderData: (p) => p } })
-  const settings = query.data ?? []
+  const settings = [...(query.data ?? [])].sort((a, b) => rank(a.key) - rank(b.key))
   const groups = [
     ...GROUPS.map(([prefix, title]) => ({ prefix, title, items: settings.filter((s) => s.key.startsWith(`${prefix}.`)) })),
     {
@@ -261,22 +288,39 @@ function SettingRow({ setting: s }: { setting: SettingResponse }) {
         />
       )
       break
+    case 'langList':
+      control = (
+        <LangList
+          value={value}
+          onChange={(v) => {
+            setValue(v)
+            setError(null)
+          }}
+          label={meta.label}
+          width={meta.width}
+        />
+      )
+      break
     case 'locale':
-    case 'lang':
+    case 'tmdbLang':
     case 'trackLang': {
-      const opts =
-        meta.kind === 'locale'
-          ? TMDB_LOCALES.map(([v, l]) => ({ value: v, label: `${v} · ${l}` }))
-          : meta.kind === 'trackLang'
-            ? [
-                ...(meta.emptyLabel != null ? [{ value: '', label: meta.emptyLabel }] : []),
-                ...ISO639_2.map(([v, l]) => ({ value: v, label: `${v} · ${l}` })),
-              ]
-            : [{ value: '', label: 'Sem idioma (sem texto)' }, ...ISO639.map(([v, l]) => ({ value: v, label: `${v} · ${l}` }))]
+      const opts = [
+        ...(meta.emptyLabel != null ? [{ value: '', label: meta.emptyLabel }] : []),
+        ...(meta.kind === 'trackLang' ? ISO639_2.map(([v, l]) => ({ value: v, label: `${v} · ${l}` })) : TMDB_LANG_OPTIONS),
+      ]
       if (value && !opts.some((o) => o.value === value)) opts.push({ value, label: value })
       control = (
         <div style={{ width: meta.width }} className="max-w-full">
-          <Select value={value} onChange={setValue} options={opts} aria-label={meta.label} className="h-9" />
+          <Select
+            value={value}
+            onChange={(v) => {
+              setValue(v)
+              setError(null)
+            }}
+            options={opts}
+            aria-label={meta.label}
+            className="h-9"
+          />
         </div>
       )
       break
@@ -321,6 +365,81 @@ function SettingRow({ setting: s }: { setting: SettingResponse }) {
       <span className={cn('basis-full text-xs', error ? 'text-danger' : 'text-muted')}>
         {error ?? `Atualizado ${formatRelative(s.updatedAt)}`}
       </span>
+    </div>
+  )
+}
+
+const splitLangs = (v: string) =>
+  v
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean)
+
+/** Lista ordenada de idiomas, gravada como `en-US,ja,none`. */
+function LangList({
+  value,
+  onChange,
+  label,
+  width,
+}: {
+  value: string
+  onChange: (value: string) => void
+  label: string
+  width?: number
+}) {
+  const langs = splitLangs(value)
+  const set = (next: string[]) => onChange(next.join(','))
+  const move = (i: number, d: -1 | 1) => {
+    const next = [...langs]
+    ;[next[i], next[i + d]] = [next[i + d], next[i]]
+    set(next)
+  }
+  const labelOf = (v: string) => LOGO_LANG_OPTIONS.find((o) => o.value === v)?.label ?? v
+  const addable = LOGO_LANG_OPTIONS.filter((o) => !langs.includes(o.value))
+
+  return (
+    <div style={{ width }} className="flex max-w-full flex-col gap-1.5">
+      {langs.length === 0 && <span className="text-sm text-muted">Nenhum idioma: o logo não é preenchido.</span>}
+      {langs.map((l, i) => (
+        <div key={l} className="flex h-8 items-center gap-1 rounded-rs border border-line bg-bg pl-2.5 pr-1 text-13">
+          <span className="w-4 text-xs text-muted">{i + 1}</span>
+          <span className="min-w-0 flex-1 truncate">{labelOf(l)}</span>
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            iconSize={16}
+            icon="arrow_upward"
+            aria-label={`Subir ${l}`}
+            disabled={i === 0}
+            onClick={() => move(i, -1)}
+          />
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            iconSize={16}
+            icon="arrow_downward"
+            aria-label={`Descer ${l}`}
+            disabled={i === langs.length - 1}
+            onClick={() => move(i, 1)}
+          />
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            iconSize={16}
+            icon="close"
+            aria-label={`Remover ${l}`}
+            onClick={() => set(langs.filter((x) => x !== l))}
+          />
+        </div>
+      ))}
+      <Select
+        value=""
+        onChange={(v) => v && set([...langs, v])}
+        options={addable}
+        placeholder="Adicionar idioma"
+        aria-label={`Adicionar a ${label}`}
+        size="sm"
+      />
     </div>
   )
 }
