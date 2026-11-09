@@ -414,8 +414,8 @@ export const useBindAnimeToFolder = <TError = BadRequestResponse | NotFoundRespo
 }
 
 /**
- * Marca `reviewStatus` como `REVIEWED`. A partir daqui, o auto-bind da ingestão nunca
- * mais altera esse campo, mesmo reprocessando a pasta numa reconciliação futura.
+ * Marca `reviewStatus` como `REVIEWED`. A partir daqui, nenhum recálculo automático
+ * altera esse campo.
  * @summary Confirma manualmente que a ingestão desse anime está correta
  */
 export const markAnimeAsReviewed = async (anilistId: number, options?: Parameters<typeof http>[1]): Promise<AnimeOkResponse> => {

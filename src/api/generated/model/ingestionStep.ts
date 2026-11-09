@@ -18,11 +18,21 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { RootPathParamParameter } from './rootPathParamParameter';
 
-export type RemoveIngestedSubtreeParams = {
 /**
- * Caminho relativo à raiz do provider
+ * Step de uma tarefa, na ordem em que rodam.
+ *
+ * - `ANILIST_SYNC` — vincula a pasta a um anime da AniList.
+ * - `TMDB_BIND` — vincula o anime à série ou ao filme do TMDB.
+ * - `TMDB_OVERRIDES` — preenche título, sinopse e imagens a partir do TMDB.
+ * - `TMDB_FILEPAIR` — pareia os arquivos da pasta com os episódios do TMDB.
  */
-rootPath?: RootPathParamParameter;
-};
+export type IngestionStep = typeof IngestionStep[keyof typeof IngestionStep];
+
+
+export const IngestionStep = {
+  ANILIST_SYNC: 'ANILIST_SYNC',
+  TMDB_BIND: 'TMDB_BIND',
+  TMDB_OVERRIDES: 'TMDB_OVERRIDES',
+  TMDB_FILEPAIR: 'TMDB_FILEPAIR',
+} as const;

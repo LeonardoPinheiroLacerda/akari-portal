@@ -1,12 +1,11 @@
 # src/pages/ingestion
 
-Tela **Ingestão** (`/ingestao`): sincroniza um diretório de um provedor com o catálogo — ou
-remove do catálogo o que foi ingerido de um diretório. O trabalho em si roda no backend, em
-segundo plano; a tela só dispara e avisa.
+Tela **Ingestão** (`/ingestao`): traz para o catálogo as pastas e os vídeos novos de um diretório
+de um provedor. O trabalho em si roda no backend; a tela só dispara e avisa.
 
-| Arquivo                                  | Papel                                                                                            |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| [`IngestionPage.tsx`](IngestionPage.tsx) | Formulário de ingestão, navegador de pastas do provedor (`FolderBrowser`) e remoção do catálogo. |
+| Arquivo                                  | Papel                                                                       |
+| ---------------------------------------- | --------------------------------------------------------------------------- |
+| [`IngestionPage.tsx`](IngestionPage.tsx) | Formulário de ingestão e navegador de pastas do provedor (`FolderBrowser`). |
 
 ## Formulário
 
@@ -15,7 +14,7 @@ segundo plano; a tela só dispara e avisa.
    para Provedores.
 2. **Tipo do conteúdo** — Anime, Série ou Filme (`mediaType`). Vale só para as pastas novas; as que
    já estão no catálogo mantêm o tipo que têm. **Confirmado** (contrato, operação
-   `ingestProviderSubtree`).
+   `createIngestionTasks`).
 3. **Diretório raiz** — caminho dentro do provedor; vazio ingere o provedor inteiro. As barras do
    começo e do fim são removidas antes de enviar. "Procurar" abre o navegador de pastas.
 
@@ -24,17 +23,19 @@ backend recusa a ingestão nesse caso ([`src/features/settings`](../../features/
 
 ## Ingestão
 
-- O backend responde `202` na hora e faz o resto em segundo plano: lista o diretório no provedor,
-  remove do catálogo o que não existe mais lá, cria as pastas e arquivos novos e vincula cada pasta
-  (AniList → TMDB → episódios). **Confirmado** (contrato, `ingestProviderSubtree`).
-- A tela só confirma que a ingestão começou. O resultado chega pelas notificações: uma `INFO` ao
-  terminar, `ERROR` se a ingestão falhar, e `WARNING`/`ERROR` para cada pasta que não conseguiu
-  vincular (sem interromper as demais).
-- Pedir de novo o mesmo diretório do mesmo provedor enquanto a ingestão dele está em andamento não
-  inicia outra — o backend ignora o pedido e responde `202` igual. A tela avisa isso no card de
-  confirmação.
+- Antes de responder `202`, o backend lista o diretório no provedor e cria as pastas novas; depois,
+  em segundo plano e uma por vez, roda uma tarefa por pasta: cadastra os vídeos novos e passa pelas
+  etapas `ANILIST_SYNC` (vínculo com a AniList), `TMDB_BIND` (vínculo com o TMDB pelo anibridge),
+  `TMDB_OVERRIDES` (título, sinopse e imagens do TMDB, pelos idiomas das
+  [Preferências](../preferences/README.md)) e `TMDB_FILEPAIR` (pareamento dos episódios). A ingestão
+  não remove do catálogo o que sumiu do provedor. **Confirmado** (contrato, `createIngestionTasks` e
+  `IngestionStep`).
+- A tela só confirma que a ingestão começou; ela não acompanha o andamento das tarefas nem usa as
+  operações `getCurrentIngestion`, `listIngestions` e `getIngestionTask` do contrato.
+- Cada pedido grava uma ingestão própria, mesmo que repita um diretório já em andamento.
+  **Confirmado** (contrato, `createIngestionTasks`).
 - Erros síncronos (validação, chave do TMDB, provedor inexistente) aparecem num toast "A ingestão
-  não foi aceita".
+  não foi aceita"; uma falha ao listar o provedor (`500`) vira o toast genérico.
 
 ## Navegador de pastas (`FolderBrowser`)
 
@@ -46,17 +47,3 @@ A árvore inteira do provedor é pedida de uma vez (o portal não usa o parâmet
 operação para carregar por partes) e fica em cache por 1 minuto. Num provedor remoto grande, a
 primeira abertura pode demorar. **Aceito** (confirmado pelo mantenedor): o tamanho atual dos
 provedores não justifica carregar por partes.
-
-## Remover do catálogo
-
-"Remover do catálogo" pede confirmação e chama `DELETE /v1/ingestion/providers/{id}?rootPath=`:
-remove as pastas, os arquivos e os vínculos de metadata do trecho escolhido (ou de tudo do
-provedor, com o diretório vazio), sem tocar em nada no provedor. A operação é idempotente e
-responde `204` mesmo quando nada casa. **Confirmado** (contrato, `removeIngestedSubtree`).
-
-Arquivos desse trecho que já estavam no cache de vídeo somem da tela de Cache, mas continuam no
-disco: a linha do cache sai em cascata com o arquivo (`video_file_cache.file_id ... ON DELETE
-CASCADE`, `V12__create-video-file-cache-table.sql`), e nada apaga o arquivo baixado em `cache.dir`
-— ele fica fora da tela de Cache e fora da conta do limite de tamanho do cache. **Confirmado** no
-código do backend. **Backlog real** (confirmado pelo mantenedor): a correção é no backend `akari`,
-apagando do disco os arquivos em cache do trecho removido.

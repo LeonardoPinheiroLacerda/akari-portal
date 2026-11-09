@@ -18,16 +18,17 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { AnilistFuzzyDate } from './anilistFuzzyDate';
 import type { AnilistId } from './anilistId';
 import type { AnimeReviewStatus } from './animeReviewStatus';
+import type { AnimeTagResponse } from './animeTagResponse';
 import type { AnimeThumbnailsResponse } from './animeThumbnailsResponse';
 import type { AnimeTitlesResponse } from './animeTitlesResponse';
 import type { FranchiseAssignment } from './franchiseAssignment';
 
 /**
- * Vista pública de um anime. `banner`/`logo` só são preenchidos quando há binding TMDB —
- * o bind já escolhe a imagem mais votada automaticamente, e um override manual pode
- * trocar essa escolha depois. `synopsis` vem em HTML quando a fonte é AniList (pode
+ * Vista pública de um anime. `banner`/`logo` só são preenchidos quando há binding TMDB e
+ * um override de imagem gravado — o bind não escolhe imagem. `synopsis` vem em HTML quando a fonte é AniList (pode
  * conter `<br>`, `<i>`, `<b>`).
  */
 export interface AnimeResponse {
@@ -90,12 +91,36 @@ export interface AnimeResponse {
   isAdult?: boolean | null;
   /** @nullable */
   genres?: string[] | null;
+  /**
+     * Tags da AniList, com relevância e marcação de spoiler
+     * @nullable
+     */
+  tags?: AnimeTagResponse[] | null;
+  /** Data de estreia segundo a AniList */
+  startDate?: AnilistFuzzyDate | null;
+  /** Data de término segundo a AniList; `null` enquanto o anime não terminou */
+  endDate?: AnilistFuzzyDate | null;
+  /**
+     * Status bruto da AniList (`FINISHED`, `RELEASING`, `NOT_YET_RELEASED`, `CANCELLED`, `HIATUS`)
+     * @nullable
+     */
+  status?: string | null;
+  /**
+     * Quantidade de usuários da AniList com o anime na lista
+     * @nullable
+     */
+  popularity?: number | null;
+  /**
+     * Média simples das notas na AniList, em escala 0–10 (`score` é a média ponderada)
+     * @nullable
+     */
+  meanScore?: number | null;
   franchiseAssignment: FranchiseAssignment;
   /**
      * Raiz da franquia à qual o anime pertence (`franchiseOf`); `null` se está fora de
      * qualquer franquia (oculto, direto ou por herança)
      */
   franchiseRootId?: AnilistId | null;
-  /** `null` até o auto-bind terminar de processar a pasta pela primeira vez */
+  /** `null` até o anime ser confirmado manualmente */
   reviewStatus?: AnimeReviewStatus | null;
 }

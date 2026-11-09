@@ -22,8 +22,7 @@ import type { FolderId } from './folderId';
 import type { NotificationLevel } from './notificationLevel';
 
 /**
- * Notificação de observabilidade — hoje geradas pela ingestão (conclusão, falha geral e
- * falhas parciais do binding automático de cada título).
+ * Notificação de observabilidade — hoje nenhum domínio gera notificação.
  */
 export interface NotificationResponse {
   /** Id da notificação */
@@ -33,8 +32,7 @@ export interface NotificationResponse {
   message: string;
   /**
      * Pasta do catalog do título a que a notificação se refere — o portal usa para linkar a
-     * revisão. `null` quando a notificação não é sobre um título (ex.: conclusão da
-     * ingestão).
+     * revisão. `null` quando a notificação não é sobre um título.
      */
   folderId?: FolderId | null;
   /**

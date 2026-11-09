@@ -61,10 +61,10 @@ export const getProposeTmdbBindingUrl = () => {
  * da AniList no portal).
  *
  * A proposta é o melhor candidato do dataset do anibridge (snapshot local, atualizado de
- * hora em hora) pro `anilistId` — com fallback pelo id do MyAnimeList, lido da AniList —, o
- * mesmo critério do bind automático da ingestão: entre vários candidatos, prefere o que não
- * tem sobreposição de episódios nem cobre mais episódios do que o anime tem, e desempata
- * pela cobertura. O candidato é confirmado no TMDB, e a resposta traz a ficha do título
+ * hora em hora) pro `anilistId` — com fallback pelo id do MyAnimeList, lido da AniList.
+ * Entre vários candidatos, prefere o que não tem sobreposição de episódios nem cobre mais
+ * episódios do que o anime tem, desempata pela cobertura e, por fim, pelo tipo que combina
+ * com o formato do anime na AniList (`MOVIE` → filme; `TV`, `TV_SHORT` e `ONA` → série). O candidato é confirmado no TMDB, e a resposta traz a ficha do título
  * (`details`) pra o admin conferir antes de vincular.
  *
  * O anibridge pode estar dessincronizado do TMDB (ex.: apontar uma temporada que o título
@@ -163,8 +163,7 @@ export const useProposeTmdbBinding = <TError = BadRequestResponse | NotFoundResp
  * gravar nada. O anime precisa estar vinculado à pasta e a uma série do TMDB. A
  * `strategy` escolhe como a proposta é calculada (`ANIBRIDGE` quando ausente):
  *
- * - `ANIBRIDGE` — a mesma resolução do pairing automático da ingestão: o número do
- *   episódio sai do nome do arquivo, e o anibridge (snapshot local) converte pra
+ * - `ANIBRIDGE` — o número do episódio sai do nome do arquivo, e o anibridge (snapshot local) converte pra
  *   temporada/episódio do TMDB — com fallback de numeração absoluta (offset calculado pela
  *   cadeia de prequels) e de pasta com um único episódio. Só valem os mapeamentos do
  *   anibridge que apontam pra série vinculada: se o binding foi feito pra outra série,

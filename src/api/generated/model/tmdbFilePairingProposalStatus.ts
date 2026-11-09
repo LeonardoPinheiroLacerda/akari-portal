@@ -46,6 +46,9 @@
  * - `EPISODE_IN_USE` [`CONTINUITY`] — o episódio seguinte já está gravado em outro arquivo
  *   ou foi proposto antes pra outro arquivo nesta mesma proposta (`usedByFileId`). Não vem
  *   pré-selecionado; o arquivo continua sendo a âncora do próximo.
+ * - `OUT_OF_AIR_WINDOW` [`ANIBRIDGE`] — o anibridge resolveu `seasonNumber`/`episodeNumber`
+ *   e o episódio existe no TMDB, mas foi ao ar a mais de 365 dias antes da estreia ou depois
+ *   do fim do anime na AniList — provavelmente outra temporada ou outro anime da franquia.
  */
 export type TmdbFilePairingProposalStatus = typeof TmdbFilePairingProposalStatus[keyof typeof TmdbFilePairingProposalStatus];
 
@@ -61,4 +64,5 @@ export const TmdbFilePairingProposalStatus = {
   NO_ANCHOR: 'NO_ANCHOR',
   END_OF_SERIES: 'END_OF_SERIES',
   EPISODE_IN_USE: 'EPISODE_IN_USE',
+  OUT_OF_AIR_WINDOW: 'OUT_OF_AIR_WINDOW',
 } as const;

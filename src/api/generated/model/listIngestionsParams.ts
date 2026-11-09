@@ -18,8 +18,16 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { PageParamParameter } from './pageParamParameter';
+import type { SizeParamParameter } from './sizeParamParameter';
 
+export type ListIngestionsParams = {
 /**
- * Subtree removido (inclusive quando nada casa — idempotente)
+ * Número da página (0-based)
  */
-export type IngestionRemovedResponse = void;
+page?: PageParamParameter;
+/**
+ * Tamanho máximo de itens por página
+ */
+size?: SizeParamParameter;
+};

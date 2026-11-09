@@ -20,12 +20,14 @@
  */
 
 /**
- * Estado de revisão da ingestão automática de um anime.
- * - `PENDING_REVIEW`: ingestão completa (AniList + TMDB + todos os arquivos pareados),
+ * Estado de revisão de um anime. Hoje só `REVIEWED` é gravado, pela confirmação manual;
+ * nenhum fluxo grava `PENDING_REVIEW` nem `PARTIAL`.
+ * - `PENDING_REVIEW`: vínculo completo (AniList + TMDB + todos os arquivos pareados),
  *   aguardando confirmação manual.
- * - `PARTIAL`: ingestão incompleta (TMDB não vinculado, temporadas conflitantes, ou nem
+ * - `PARTIAL`: vínculo incompleto (TMDB não vinculado, temporadas conflitantes, ou nem
  *   todo arquivo pareado) — precisa de atenção.
- * - `REVIEWED`: confirmado manualmente; o auto-bind nunca sobrescreve esse estado.
+ * - `REVIEWED`: confirmado manualmente; nenhum recálculo automático sobrescreve esse
+ *   estado.
  */
 export type AnimeReviewStatus = typeof AnimeReviewStatus[keyof typeof AnimeReviewStatus];
 

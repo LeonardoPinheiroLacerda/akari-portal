@@ -1,14 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
-import {
-  useIngestProviderSubtree,
-  useListAvailableFolders,
-  useRemoveIngestedSubtree,
-} from '@/api/generated/endpoints/ingestion/ingestion'
+import { useCreateIngestionTasks, useListAvailableFolders } from '@/api/generated/endpoints/ingestion/ingestion'
 import type { AvailableFolderNode, MediaType } from '@/api/generated/model'
 import { errorCode, toastError } from '@/api/errors'
-import { invalidate } from '@/api/query'
 import { usePageMeta } from '@/components/layout/PageMeta'
 import { Button } from '@/components/ui/button'
 import { Chip } from '@/components/ui/chip'
@@ -25,9 +19,9 @@ import { cn } from '@/lib/utils'
 const TYPE_LABEL: Record<MediaType, string> = { ANIME: 'anime', TV: 'série', MOVIE: 'filme' }
 const STEPS = [
   'Lista as pastas do diretório no provedor',
-  'Remove do catálogo o que não existe mais lá',
-  'Cria as pastas e arquivos novos',
-  'Vincula cada pasta: AniList, TMDB e episódios',
+  'Cria as pastas novas no catálogo',
+  'Cadastra os vídeos novos de cada pasta',
+  'Vincula cada pasta: AniList, TMDB, título/imagens e episódios',
 ]
 
 const normalize = (p: string) => p.trim().replace(/^\/+|\/+$/g, '')
@@ -44,9 +38,7 @@ export function IngestionPage() {
   const [mediaType, setMediaType] = useState<MediaType>('ANIME')
   const [dir, setDir] = useState('')
   const [browse, setBrowse] = useState(false)
-  const [removeOpen, setRemoveOpen] = useState(false)
   const [started, setStarted] = useState<{ target: string; at: string } | null>(null)
-  const [removed, setRemoved] = useState<string | null>(null)
 
   useEffect(() => {
     if (providerId == null && providers.length) setProviderId(providers[0].id)
@@ -57,8 +49,7 @@ export function IngestionPage() {
   const rootPath = normalize(dir)
   const target = `${provName} · ${rootPath || 'raiz inteira'}`
 
-  const ingest = useIngestProviderSubtree()
-  const remove = useRemoveIngestedSubtree()
+  const ingest = useCreateIngestionTasks()
 
   const start = () => {
     if (!provider) return
@@ -67,30 +58,12 @@ export function IngestionPage() {
       {
         onSuccess: () => {
           setStarted({ target, at: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) })
-          setRemoved(null)
         },
         onError: (e) => {
           if (errorCode(e) === 'BUSINESS_RULE_VIOLATION' || errorCode(e) === 'VALIDATION_ERROR')
             toastError(e, 'A ingestão não foi aceita')
           else toastError(e)
         },
-      },
-    )
-  }
-
-  const doRemove = () => {
-    if (!provider) return
-    remove.mutate(
-      { providerId: provider.id, params: rootPath ? { rootPath } : undefined },
-      {
-        onSuccess: async () => {
-          setRemoveOpen(false)
-          setStarted(null)
-          setRemoved(target)
-          await Promise.all([invalidate.catalog(), invalidate.anime()])
-          toast.success('Removido do catálogo')
-        },
-        onError: (e) => toastError(e),
       },
     )
   }
@@ -237,27 +210,10 @@ export function IngestionPage() {
           <span className="mt-3 min-w-[240px] flex-1 text-sm text-muted">
             Ingerir {target} como {TYPE_LABEL[mediaType]}.
           </span>
-          <Button size="lg" className="mt-3 text-danger" onClick={() => setRemoveOpen(true)}>
-            Remover do catálogo
-          </Button>
           <Button size="lg" variant="primary" className="mt-3" disabled={!can} loading={ingest.isPending} onClick={start}>
             Iniciar ingestão
           </Button>
         </div>
-        {removeOpen && (
-          <div className="flex flex-col gap-2.5 rounded-rs border border-danger px-4 py-3.5">
-            <span className="text-13 leading-normal">
-              Remover <b className="font-mono">{target}</b> do catálogo? As pastas, arquivos e vínculos de metadata desse trecho
-              saem do catálogo. Nada é apagado no provedor.
-            </span>
-            <div className="flex justify-end gap-2">
-              <Button onClick={() => setRemoveOpen(false)}>Cancelar</Button>
-              <Button variant="danger-solid" loading={remove.isPending} onClick={doRemove}>
-                Remover
-              </Button>
-            </div>
-          </div>
-        )}
       </section>
 
       {started && (
@@ -267,12 +223,10 @@ export function IngestionPage() {
             <div className="flex flex-1 flex-col gap-[3px]">
               <span className="font-semibold">Ingestão iniciada em segundo plano</span>
               <span className="text-13 text-muted">
-                {started.target} · pedido às {started.at}. Você recebe uma notificação a cada falha de vínculo e uma ao terminar.
+                {started.target} · pedido às {started.at}. As pastas já foram criadas; cada uma é processada em segundo plano, uma
+                por vez.
               </span>
             </div>
-            <Button size="sm" onClick={() => navigate('/notificacoes')}>
-              Ver notificações
-            </Button>
           </div>
           <div className="grid gap-2.5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr))]">
             {STEPS.map((t, i) => (
@@ -285,15 +239,9 @@ export function IngestionPage() {
             ))}
           </div>
           <span className="text-sm text-muted">
-            Se já houver uma ingestão desse mesmo diretório em andamento, o novo pedido é ignorado.
+            Cada pedido inicia uma ingestão nova, mesmo que repita um diretório em andamento.
           </span>
         </section>
-      )}
-      {removed && (
-        <div className="flex items-center gap-2.5 rounded-r border border-line bg-panel px-4 py-3 text-13">
-          <Icon name="check_circle" size={18} className="text-[var(--ok-fg)]" />
-          {removed} removido do catálogo.
-        </div>
       )}
     </>
   )

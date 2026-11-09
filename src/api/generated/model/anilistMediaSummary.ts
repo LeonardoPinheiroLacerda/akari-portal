@@ -24,6 +24,7 @@ import type { AnilistFuzzyDate } from './anilistFuzzyDate';
 import type { AnilistId } from './anilistId';
 import type { AnilistSeason } from './anilistSeason';
 import type { AnilistTitle } from './anilistTitle';
+import type { AnimeTagResponse } from './animeTagResponse';
 
 /**
  * Shape reduzido de `Media` para o endpoint de search — omite `relations` para evitar
@@ -57,6 +58,13 @@ export interface AnilistMediaSummary {
      */
   duration?: number | null;
   startDate?: AnilistFuzzyDate | null;
+  /** Data de término; `null` enquanto o anime não terminou */
+  endDate?: AnilistFuzzyDate | null;
+  /**
+     * Status bruto da AniList (`FINISHED`, `RELEASING`, `NOT_YET_RELEASED`, `CANCELLED`, `HIATUS`)
+     * @nullable
+     */
+  status?: string | null;
   /**
      * Ano da estação de estreia; mais confiável que `startDate.year`
      * @nullable
@@ -65,10 +73,20 @@ export interface AnilistMediaSummary {
   format?: AnilistFormat | null;
   season?: AnilistSeason | null;
   /**
-     * Nota média em escala 0–100
+     * Nota média ponderada em escala 0–100
      * @nullable
      */
   averageScore?: number | null;
+  /**
+     * Média simples das notas em escala 0–100
+     * @nullable
+     */
+  meanScore?: number | null;
+  /**
+     * Quantidade de usuários da AniList com o anime na lista
+     * @nullable
+     */
+  popularity?: number | null;
   /**
      * Flag NSFW derivada do `isAdult` da AniList
      * @nullable
@@ -76,6 +94,11 @@ export interface AnilistMediaSummary {
   isAdult?: boolean | null;
   /** Nomes de gêneros */
   genres?: string[];
+  /**
+     * Tags da AniList, com relevância e marcação de spoiler
+     * @nullable
+     */
+  tags?: AnimeTagResponse[] | null;
   /**
      * Estúdio principal responsável pela produção, segundo a AniList
      * @nullable

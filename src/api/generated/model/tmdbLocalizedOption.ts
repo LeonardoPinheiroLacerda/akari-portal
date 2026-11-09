@@ -27,7 +27,8 @@ export interface TmdbLocalizedOption {
   /** @nullable */
   value?: string | null;
   /**
-     * ISO 639-1; `null` quando o TMDB não informa
+     * ISO 639-1, seguido do país ISO 3166-1 quando o TMDB informa (`pt-BR`, `zh-TW`);
+     * `null` quando o TMDB não informa.
      * @nullable
      */
   language?: string | null;

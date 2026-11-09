@@ -42,12 +42,15 @@ import type {
   BadGatewayResponse,
   BadRequestResponse,
   IngestSubtreeRequestBodyBody,
-  IngestionRemovedResponse,
+  IngestionPageOkResponse,
   IngestionStartedResponse,
+  IngestionSummaryOkResponse,
+  IngestionTaskDetailOkResponse,
   InternalServerErrorResponse,
   ListAvailableFoldersParams,
-  NotFoundResponse,
-  RemoveIngestedSubtreeParams
+  ListIngestionsParams,
+  NoIngestionResponse,
+  NotFoundResponse
 } from '../../model';
 
 import { http } from '../../../http';
@@ -72,7 +75,7 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
-export const getIngestProviderSubtreeUrl = (providerId: number,) => {
+export const getCreateIngestionTasksUrl = (providerId: number,) => {
 
 
 
@@ -81,33 +84,28 @@ export const getIngestProviderSubtreeUrl = (providerId: number,) => {
 }
 
 /**
- * Dispara a reconciliação do subtree indicado por `rootPath` (ou a raiz, se omitido)
- * com o catalog **em background** e retorna `202` imediatamente, sem aguardar o resultado.
+ * Ingere o subtree indicado por `rootPath` (ou a raiz, se omitido) no catalog e retorna
+ * `202` sem aguardar o cadastro dos arquivos.
  *
- * Só são síncronos a validação do payload (`400`), o precheck de que o TMDB está
- * configurado — `400` se a preferência `tmdb.api-key` estiver vazia, já que sem TMDB
- * nenhum anime completaria o binding automático — e o precheck de existência do
- * provider (`404`). Todo o resto roda depois da resposta — inclusive a verificação de
- * que o `rootPath` existe no provider. O resultado é reportado pelo módulo
- * `notification`: uma notificação `INFO` ao concluir, ou `ERROR` se a ingestão falhar.
+ * Síncronos, antes da resposta: a validação do payload (`400`), o precheck de que o TMDB
+ * está configurado (`400` se a preferência `tmdb.api-key` estiver vazia), o precheck de
+ * existência do provider (`404`), a listagem da árvore do subtree no provider e a criação
+ * das pastas. Uma falha na listagem do provider responde `500`. A existência do `rootPath`
+ * no provider não é validada.
  *
  * Etapas, em ordem:
  *
- * 1. Lista a árvore do subtree no provider.
- * 2. Remove do catalog as pastas/arquivos do subtree que não existem mais no provider.
- * 3. Cria as pastas novas (pai antes do filho) com o `mediaType` recebido — pastas já
- *    registradas mantêm o `mediaType` que tinham — e os arquivos de vídeo novos.
- * 4. Cada pasta com vídeos diretos é vinculada automaticamente, antes de a próxima ser
- *    processada: busca na AniList → binding AniList → binding TMDB → pairing de episódios
- *    (este só quando o TMDB mapeado é série). Uma falha numa dessas etapas vira notificação
- *    `WARNING`/`ERROR` sem interromper a ingestão. O binding automático roda
- *    independentemente do `mediaType`.
+ * 1. Lista a árvore do subtree no provider, incluindo a própria pasta do `rootPath`.
+ * 2. Cria as pastas novas (pai antes do filho) com o `mediaType` recebido — pastas já
+ *    registradas mantêm o `mediaType` que tinham.
+ * 3. Grava a ingestão e, em background, uma tarefa por pasta — inclusive as sem vídeos —,
+ *    cadastrando os arquivos de vídeo novos diretos da pasta.
  *
- * Um disparo para o mesmo `(providerId, rootPath)` enquanto outro está em andamento é
- * ignorado — a resposta é a mesma `202`, sem iniciar uma segunda ingestão.
+ * Disparos repetidos para o mesmo subtree não são deduplicados: cada um grava sua própria
+ * ingestão.
  * @summary Ingere um subtree do provider no catalog
  */
-export const ingestProviderSubtree = async (providerId: number,
+export const createIngestionTasks = async (providerId: number,
     ingestSubtreeRequestBodyBody: IngestSubtreeRequestBodyBody, options?: Parameters<typeof http>[1]): Promise<IngestionStartedResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
@@ -124,7 +122,7 @@ export const ingestProviderSubtree = async (providerId: number,
     }
     return headers;
   };
-return http<IngestionStartedResponse>(getIngestProviderSubtreeUrl(providerId),
+return http<IngestionStartedResponse>(getCreateIngestionTasksUrl(providerId),
   {
     ...options,
     method: 'POST',
@@ -137,13 +135,13 @@ return http<IngestionStartedResponse>(getIngestProviderSubtreeUrl(providerId),
 
 
 
-export const getIngestProviderSubtreeMutationKey = () => ['ingestProviderSubtree'] as const;
+export const getCreateIngestionTasksMutationKey = () => ['createIngestionTasks'] as const;
 
-export const getIngestProviderSubtreeMutationOptions = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestProviderSubtree>>, TError,IngestProviderSubtreeMutationVariables, TContext>, request?: SecondParameter<typeof http>}
-): UseMutationOptions<Awaited<ReturnType<typeof ingestProviderSubtree>>, TError,IngestProviderSubtreeMutationVariables, TContext> => {
+export const getCreateIngestionTasksMutationOptions = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createIngestionTasks>>, TError,CreateIngestionTasksMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof createIngestionTasks>>, TError,CreateIngestionTasksMutationVariables, TContext> => {
 
-const mutationKey = getIngestProviderSubtreeMutationKey();
+const mutationKey = getCreateIngestionTasksMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -153,10 +151,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ingestProviderSubtree>>, IngestProviderSubtreeMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createIngestionTasks>>, CreateIngestionTasksMutationVariables> = (props) => {
           const {providerId,data} = props ?? {};
 
-          return  ingestProviderSubtree(providerId,data,requestOptions)
+          return  createIngestionTasks(providerId,data,requestOptions)
         }
 
 
@@ -166,110 +164,23 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type IngestProviderSubtreeMutationResult = NonNullable<Awaited<ReturnType<typeof ingestProviderSubtree>>>
-    export type IngestProviderSubtreeMutationBody = IngestSubtreeRequestBodyBody
-    export type IngestProviderSubtreeMutationError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse
-    export type IngestProviderSubtreeMutationVariables = {providerId: number;data: IngestSubtreeRequestBodyBody}
+    export type CreateIngestionTasksMutationResult = NonNullable<Awaited<ReturnType<typeof createIngestionTasks>>>
+    export type CreateIngestionTasksMutationBody = IngestSubtreeRequestBodyBody
+    export type CreateIngestionTasksMutationError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse
+    export type CreateIngestionTasksMutationVariables = {providerId: number;data: IngestSubtreeRequestBodyBody}
 
     /**
  * @summary Ingere um subtree do provider no catalog
  */
-export const useIngestProviderSubtree = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestProviderSubtree>>, TError,IngestProviderSubtreeMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+export const useCreateIngestionTasks = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createIngestionTasks>>, TError,CreateIngestionTasksMutationVariables, TContext>, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof ingestProviderSubtree>>,
+        Awaited<ReturnType<typeof createIngestionTasks>>,
         TError,
-        IngestProviderSubtreeMutationVariables,
+        CreateIngestionTasksMutationVariables,
         TContext
       > => {
-      return useMutation(getIngestProviderSubtreeMutationOptions(options), queryClient);
-    }
-    export const getRemoveIngestedSubtreeUrl = (providerId: number,
-    params?: RemoveIngestedSubtreeParams,) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0 ? `/v1/ingestion/providers/${providerId}?${stringifiedParams}` : `/v1/ingestion/providers/${providerId}`
-}
-
-/**
- * Remove do catalog as pastas/arquivos correspondentes ao subtree indicado por
- * `rootPath` (ou tudo do provider, se omitido), junto com os bindings de metadata
- * (`animemetadata`) dessas pastas. **Não** toca no provider upstream. Operação
- * idempotente — devolve `204` mesmo quando nada casa, inclusive se o `providerId` não
- * existir (não há precheck).
- * @summary Remove um subtree ingerido do catalog
- */
-export const removeIngestedSubtree = async (providerId: number,
-    params?: RemoveIngestedSubtreeParams, options?: Parameters<typeof http>[1]): Promise<IngestionRemovedResponse> => {
-
-  return http<IngestionRemovedResponse>(getRemoveIngestedSubtreeUrl(providerId,params),
-  {
-    ...options,
-    method: 'DELETE'
-
-
-  }
-);}
-
-
-
-
-
-export const getRemoveIngestedSubtreeMutationKey = () => ['removeIngestedSubtree'] as const;
-
-export const getRemoveIngestedSubtreeMutationOptions = <TError = InternalServerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeIngestedSubtree>>, TError,RemoveIngestedSubtreeMutationVariables, TContext>, request?: SecondParameter<typeof http>}
-): UseMutationOptions<Awaited<ReturnType<typeof removeIngestedSubtree>>, TError,RemoveIngestedSubtreeMutationVariables, TContext> => {
-
-const mutationKey = getRemoveIngestedSubtreeMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeIngestedSubtree>>, RemoveIngestedSubtreeMutationVariables> = (props) => {
-          const {providerId,params} = props ?? {};
-
-          return  removeIngestedSubtree(providerId,params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type RemoveIngestedSubtreeMutationResult = NonNullable<Awaited<ReturnType<typeof removeIngestedSubtree>>>
-
-    export type RemoveIngestedSubtreeMutationError = InternalServerErrorResponse
-    export type RemoveIngestedSubtreeMutationVariables = {providerId: number;params?: RemoveIngestedSubtreeParams}
-
-    /**
- * @summary Remove um subtree ingerido do catalog
- */
-export const useRemoveIngestedSubtree = <TError = InternalServerErrorResponse,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeIngestedSubtree>>, TError,RemoveIngestedSubtreeMutationVariables, TContext>, request?: SecondParameter<typeof http>}
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof removeIngestedSubtree>>,
-        TError,
-        RemoveIngestedSubtreeMutationVariables,
-        TContext
-      > => {
-      return useMutation(getRemoveIngestedSubtreeMutationOptions(options), queryClient);
+      return useMutation(getCreateIngestionTasksMutationOptions(options), queryClient);
     }
     export const getListAvailableFoldersUrl = (providerId: number,
     params?: ListAvailableFoldersParams,) => {
@@ -380,6 +291,323 @@ export function useListAvailableFolders<TData = Awaited<ReturnType<typeof listAv
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getListAvailableFoldersQueryOptions(providerId,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetCurrentIngestionUrl = () => {
+
+
+
+
+  return `/v1/ingestion/current`
+}
+
+/**
+ * A ingestão em andamento (`RUNNING`) ou, sem nenhuma em andamento, a mais recente, com
+ * todas as tarefas. Responde `204` quando nenhuma ingestão foi disparada ainda.
+ *
+ * Pra acompanhar em tempo real, use o stream SSE `GET /v1/ingestion/events` (ver
+ * `IngestionStreamEvent`).
+ * @summary Resumo da ingestão em andamento, ou da última
+ */
+export const getCurrentIngestion = async ( options?: Parameters<typeof http>[1]): Promise<IngestionSummaryOkResponse | NoIngestionResponse> => {
+
+  return http<IngestionSummaryOkResponse | NoIngestionResponse>(getGetCurrentIngestionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCurrentIngestionQueryKey = () => {
+    return [
+    `/v1/ingestion/current`
+    ] as const;
+    }
+
+
+export const getGetCurrentIngestionQueryOptions = <TData = Awaited<ReturnType<typeof getCurrentIngestion>>, TError = InternalServerErrorResponse>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentIngestion>>, TError, TData>>, request?: SecondParameter<typeof http>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCurrentIngestionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentIngestion>>> = ({ signal }) => getCurrentIngestion({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCurrentIngestion>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetCurrentIngestionQueryResult = NonNullable<Awaited<ReturnType<typeof getCurrentIngestion>>>
+export type GetCurrentIngestionQueryError = InternalServerErrorResponse
+
+
+export function useGetCurrentIngestion<TData = Awaited<ReturnType<typeof getCurrentIngestion>>, TError = InternalServerErrorResponse>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentIngestion>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCurrentIngestion>>,
+          TError,
+          Awaited<ReturnType<typeof getCurrentIngestion>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCurrentIngestion<TData = Awaited<ReturnType<typeof getCurrentIngestion>>, TError = InternalServerErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentIngestion>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCurrentIngestion>>,
+          TError,
+          Awaited<ReturnType<typeof getCurrentIngestion>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCurrentIngestion<TData = Awaited<ReturnType<typeof getCurrentIngestion>>, TError = InternalServerErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentIngestion>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Resumo da ingestão em andamento, ou da última
+ */
+
+export function useGetCurrentIngestion<TData = Awaited<ReturnType<typeof getCurrentIngestion>>, TError = InternalServerErrorResponse>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentIngestion>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCurrentIngestionQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getListIngestionsUrl = (params?: ListIngestionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/ingestion?${stringifiedParams}` : `/v1/ingestion`
+}
+
+/**
+ * Página de ingestões, cada uma no mesmo formato de `GET /v1/ingestion/current` (com todas
+ * as tarefas), da mais nova para a mais antiga, 0-based (`page`/`size`).
+ * @summary Lista as ingestões, da mais nova pra mais antiga
+ */
+export const listIngestions = async (params?: ListIngestionsParams, options?: Parameters<typeof http>[1]): Promise<IngestionPageOkResponse> => {
+
+  return http<IngestionPageOkResponse>(getListIngestionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListIngestionsQueryKey = (params?: ListIngestionsParams,) => {
+    return [
+    `/v1/ingestion`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListIngestionsQueryOptions = <TData = Awaited<ReturnType<typeof listIngestions>>, TError = BadRequestResponse | InternalServerErrorResponse>(params?: ListIngestionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listIngestions>>, TError, TData>>, request?: SecondParameter<typeof http>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListIngestionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listIngestions>>> = ({ signal }) => listIngestions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listIngestions>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type ListIngestionsQueryResult = NonNullable<Awaited<ReturnType<typeof listIngestions>>>
+export type ListIngestionsQueryError = BadRequestResponse | InternalServerErrorResponse
+
+
+export function useListIngestions<TData = Awaited<ReturnType<typeof listIngestions>>, TError = BadRequestResponse | InternalServerErrorResponse>(
+ params: undefined |  ListIngestionsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listIngestions>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listIngestions>>,
+          TError,
+          Awaited<ReturnType<typeof listIngestions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListIngestions<TData = Awaited<ReturnType<typeof listIngestions>>, TError = BadRequestResponse | InternalServerErrorResponse>(
+ params?: ListIngestionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listIngestions>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listIngestions>>,
+          TError,
+          Awaited<ReturnType<typeof listIngestions>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListIngestions<TData = Awaited<ReturnType<typeof listIngestions>>, TError = BadRequestResponse | InternalServerErrorResponse>(
+ params?: ListIngestionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listIngestions>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Lista as ingestões, da mais nova pra mais antiga
+ */
+
+export function useListIngestions<TData = Awaited<ReturnType<typeof listIngestions>>, TError = BadRequestResponse | InternalServerErrorResponse>(
+ params?: ListIngestionsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listIngestions>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListIngestionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export const getGetIngestionTaskUrl = (taskId: number,) => {
+
+
+
+
+  return `/v1/ingestion/tasks/${taskId}`
+}
+
+/**
+ * A tarefa com todas as execuções dos steps — cada tentativa é uma execução própria —, na
+ * ordem em que rodaram, cada uma com os seus eventos na ordem em que foram gravados.
+ * Responde `404` se a tarefa não existe.
+ * @summary Detalhe de uma tarefa, com a linha do tempo de cada step
+ */
+export const getIngestionTask = async (taskId: number, options?: Parameters<typeof http>[1]): Promise<IngestionTaskDetailOkResponse> => {
+
+  return http<IngestionTaskDetailOkResponse>(getGetIngestionTaskUrl(taskId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetIngestionTaskQueryKey = (taskId: number,) => {
+    return [
+    `/v1/ingestion/tasks/${taskId}`
+    ] as const;
+    }
+
+
+export const getGetIngestionTaskQueryOptions = <TData = Awaited<ReturnType<typeof getIngestionTask>>, TError = NotFoundResponse | InternalServerErrorResponse>(taskId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIngestionTask>>, TError, TData>>, request?: SecondParameter<typeof http>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetIngestionTaskQueryKey(taskId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIngestionTask>>> = ({ signal }) => getIngestionTask(taskId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: taskId !== null && taskId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIngestionTask>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetIngestionTaskQueryResult = NonNullable<Awaited<ReturnType<typeof getIngestionTask>>>
+export type GetIngestionTaskQueryError = NotFoundResponse | InternalServerErrorResponse
+
+
+export function useGetIngestionTask<TData = Awaited<ReturnType<typeof getIngestionTask>>, TError = NotFoundResponse | InternalServerErrorResponse>(
+ taskId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIngestionTask>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIngestionTask>>,
+          TError,
+          Awaited<ReturnType<typeof getIngestionTask>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIngestionTask<TData = Awaited<ReturnType<typeof getIngestionTask>>, TError = NotFoundResponse | InternalServerErrorResponse>(
+ taskId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIngestionTask>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIngestionTask>>,
+          TError,
+          Awaited<ReturnType<typeof getIngestionTask>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIngestionTask<TData = Awaited<ReturnType<typeof getIngestionTask>>, TError = NotFoundResponse | InternalServerErrorResponse>(
+ taskId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIngestionTask>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Detalhe de uma tarefa, com a linha do tempo de cada step
+ */
+
+export function useGetIngestionTask<TData = Awaited<ReturnType<typeof getIngestionTask>>, TError = NotFoundResponse | InternalServerErrorResponse>(
+ taskId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIngestionTask>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetIngestionTaskQueryOptions(taskId,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

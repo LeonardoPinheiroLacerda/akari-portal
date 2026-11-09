@@ -581,6 +581,7 @@ const PROPOSAL_STATUS: Record<TmdbFilePairingProposalStatus, { label: string; to
   NOT_MAPPED: { label: 'fora do mapeamento do anibridge', tone: 'warn' },
   AMBIGUOUS_ABSOLUTE_NUMBERING: { label: 'numeração absoluta ambígua', tone: 'warn' },
   NOT_FOUND_IN_TMDB: { label: 'episódio não existe no TMDB', tone: 'err' },
+  OUT_OF_AIR_WINDOW: { label: 'exibido fora da janela do anime', tone: 'warn' },
   NO_MAPPING: { label: 'sem mapeamento para a série', tone: 'warn' },
   CONFLICTING_MAPPING: { label: 'mapeamento conflitante', tone: 'err' },
   NO_ANCHOR: { label: 'sem arquivo pareado antes', tone: 'neutral' },

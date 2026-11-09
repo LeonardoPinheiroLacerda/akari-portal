@@ -23,8 +23,7 @@
  * Como a proposta de pairing é calculada.
  *
  * - `ANIBRIDGE` — número do episódio extraído do nome do arquivo, convertido pelo
- *   anibridge pra temporada/episódio da série vinculada (o mesmo do pairing automático da
- *   ingestão).
+ *   anibridge pra temporada/episódio da série vinculada.
  * - `CONTINUITY` — episódio seguinte ao do arquivo pareado anterior, pela estrutura da
  *   série no TMDB; não consulta o anibridge.
  */
