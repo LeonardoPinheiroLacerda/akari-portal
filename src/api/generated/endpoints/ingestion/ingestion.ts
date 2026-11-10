@@ -516,7 +516,85 @@ export function useListIngestions<TData = Awaited<ReturnType<typeof listIngestio
 
 
 
-export const getGetIngestionTaskUrl = (taskId: number,) => {
+export const getResolveIngestionTaskUrl = (taskId: number,) => {
+
+
+
+
+  return `/v1/ingestion/tasks/${taskId}/resolve`
+}
+
+/**
+ * Confirma que a curadoria de uma tarefa em `WAITING_CURATION` foi feita à mão no portal e
+ * passa a tarefa para `RESOLVED`. Os steps que não rodaram não são executados. Publica a
+ * mudança no stream SSE (`TASK_UPDATED` e `INGESTION_UPDATED`).
+ *
+ * Responde `400` se a tarefa não está em `WAITING_CURATION` e `404` se não existe.
+ * @summary Marca como resolvida manualmente uma tarefa que espera curadoria
+ */
+export const resolveIngestionTask = async (taskId: number, options?: Parameters<typeof http>[1]): Promise<IngestionTaskDetailOkResponse> => {
+
+  return http<IngestionTaskDetailOkResponse>(getResolveIngestionTaskUrl(taskId),
+  {
+    ...options,
+    method: 'PUT'
+
+
+  }
+);}
+
+
+
+
+
+export const getResolveIngestionTaskMutationKey = () => ['resolveIngestionTask'] as const;
+
+export const getResolveIngestionTaskMutationOptions = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveIngestionTask>>, TError,ResolveIngestionTaskMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof resolveIngestionTask>>, TError,ResolveIngestionTaskMutationVariables, TContext> => {
+
+const mutationKey = getResolveIngestionTaskMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resolveIngestionTask>>, ResolveIngestionTaskMutationVariables> = (props) => {
+          const {taskId} = props ?? {};
+
+          return  resolveIngestionTask(taskId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResolveIngestionTaskMutationResult = NonNullable<Awaited<ReturnType<typeof resolveIngestionTask>>>
+
+    export type ResolveIngestionTaskMutationError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse
+    export type ResolveIngestionTaskMutationVariables = {taskId: number}
+
+    /**
+ * @summary Marca como resolvida manualmente uma tarefa que espera curadoria
+ */
+export const useResolveIngestionTask = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveIngestionTask>>, TError,ResolveIngestionTaskMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof resolveIngestionTask>>,
+        TError,
+        ResolveIngestionTaskMutationVariables,
+        TContext
+      > => {
+      return useMutation(getResolveIngestionTaskMutationOptions(options), queryClient);
+    }
+    export const getGetIngestionTaskUrl = (taskId: number,) => {
 
 
 

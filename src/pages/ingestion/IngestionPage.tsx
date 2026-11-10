@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCreateIngestionTasks, useListAvailableFolders } from '@/api/generated/endpoints/ingestion/ingestion'
+import { toast } from 'sonner'
 import type { AvailableFolderNode, MediaType } from '@/api/generated/model'
 import { errorCode, toastError } from '@/api/errors'
+import { getGetCurrentIngestionQueryKey } from '@/api/generated/endpoints/ingestion/ingestion'
+import { queryClient } from '@/api/query'
 import { usePageMeta } from '@/components/layout/PageMeta'
 import { Button } from '@/components/ui/button'
 import { Chip } from '@/components/ui/chip'
@@ -10,20 +13,16 @@ import { Icon } from '@/components/ui/icon'
 import { RadioDot } from '@/components/ui/radio'
 import { Segmented } from '@/components/ui/segmented'
 import { EmptyState, ErrorState, Loading } from '@/components/ui/states'
+import { invalidateHistory, useCurrentIngestion } from '@/features/ingestion/IngestionLiveProvider'
+import { isFinished } from '@/features/ingestion/labels'
 import { healthChip, useProviderHealth } from '@/features/providers/health'
 import { providerName, providerTypeDef } from '@/features/providers/types'
 import { useProviders } from '@/features/providers/useProviders'
 import { useSetting } from '@/features/settings/useSetting'
 import { cn } from '@/lib/utils'
+import { IngestionHistory, LatestIngestion } from './IngestionOverview'
 
 const TYPE_LABEL: Record<MediaType, string> = { ANIME: 'anime', TV: 'série', MOVIE: 'filme' }
-const STEPS = [
-  'Lista as pastas do diretório no provedor',
-  'Cria as pastas novas no catálogo',
-  'Cadastra os vídeos novos de cada pasta',
-  'Vincula cada pasta: AniList, TMDB, título/imagens e episódios',
-]
-
 const normalize = (p: string) => p.trim().replace(/^\/+|\/+$/g, '')
 
 export function IngestionPage() {
@@ -38,7 +37,8 @@ export function IngestionPage() {
   const [mediaType, setMediaType] = useState<MediaType>('ANIME')
   const [dir, setDir] = useState('')
   const [browse, setBrowse] = useState(false)
-  const [started, setStarted] = useState<{ target: string; at: string } | null>(null)
+  const current = useCurrentIngestion()
+  const running = current.data != null && !isFinished(current.data.status)
 
   useEffect(() => {
     if (providerId == null && providers.length) setProviderId(providers[0].id)
@@ -57,7 +57,11 @@ export function IngestionPage() {
       { providerId: provider.id, data: { mediaType, rootPath: rootPath || null } },
       {
         onSuccess: () => {
-          setStarted({ target, at: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) })
+          toast.success('Ingestão iniciada', { description: target })
+          setBrowse(false)
+          // O stream já avisa da ingestão nova; recarregar cobre o stream fora do ar.
+          void queryClient.invalidateQueries({ queryKey: getGetCurrentIngestionQueryKey() })
+          void invalidateHistory()
         },
         onError: (e) => {
           if (errorCode(e) === 'BUSINESS_RULE_VIOLATION' || errorCode(e) === 'VALIDATION_ERROR')
@@ -109,8 +113,8 @@ export function IngestionPage() {
         <div className="flex flex-col gap-1">
           <h3 className="m-0 text-15 font-semibold">Nova ingestão</h3>
           <p className="m-0 text-13 leading-normal text-muted">
-            Sincroniza um diretório do provedor com o catálogo e vincula cada pasta automaticamente. Roda em segundo plano; o
-            resultado chega em Notificações.
+            Traz para o catálogo as pastas e os vídeos novos de um diretório do provedor e vincula cada pasta: AniList, TMDB,
+            título e imagens, episódios. As pastas rodam em segundo plano, uma por vez.
           </p>
         </div>
 
@@ -214,35 +218,15 @@ export function IngestionPage() {
             Iniciar ingestão
           </Button>
         </div>
+        {running && (
+          <span className="text-sm text-muted">
+            Já há uma ingestão rodando; a nova entra na fila e as pastas dela rodam depois das atuais.
+          </span>
+        )}
       </section>
 
-      {started && (
-        <section className="flex flex-col gap-3.5 rounded-r border border-[var(--ok-fg)] bg-panel px-5 py-[18px]">
-          <div className="flex items-start gap-3">
-            <Icon name="rocket_launch" size={22} className="text-[var(--ok-fg)]" />
-            <div className="flex flex-1 flex-col gap-[3px]">
-              <span className="font-semibold">Ingestão iniciada em segundo plano</span>
-              <span className="text-13 text-muted">
-                {started.target} · pedido às {started.at}. As pastas já foram criadas; cada uma é processada em segundo plano, uma
-                por vez.
-              </span>
-            </div>
-          </div>
-          <div className="grid gap-2.5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr))]">
-            {STEPS.map((t, i) => (
-              <div key={t} className="flex gap-2.5 rounded-rs bg-bg px-3 py-2.5">
-                <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-raised text-sm font-bold">
-                  {i + 1}
-                </span>
-                <span className="text-sm leading-[1.45] text-muted">{t}</span>
-              </div>
-            ))}
-          </div>
-          <span className="text-sm text-muted">
-            Cada pedido inicia uma ingestão nova, mesmo que repita um diretório em andamento.
-          </span>
-        </section>
-      )}
+      <LatestIngestion />
+      <IngestionHistory />
     </>
   )
 }

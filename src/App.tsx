@@ -5,12 +5,14 @@ import { queryClient } from '@/api/query'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { PageMetaProvider } from '@/components/layout/PageMeta'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { IngestionLiveProvider } from '@/features/ingestion/IngestionLiveProvider'
 import { NotificationsProvider } from '@/features/notifications/NotificationsProvider'
 import { CachePage } from '@/pages/cache/CachePage'
 import { CatalogPage } from '@/pages/catalog/CatalogPage'
 import { FranchisesPage } from '@/pages/franchises/FranchisesPage'
 import { HomePage } from '@/pages/home/HomePage'
 import { IngestionPage } from '@/pages/ingestion/IngestionPage'
+import { IngestionTasksPage } from '@/pages/ingestion/IngestionTasksPage'
 import { ItemPage } from '@/pages/item/ItemPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { NotificationsPage } from '@/pages/notifications/NotificationsPage'
@@ -31,6 +33,7 @@ const router = createBrowserRouter([
       { path: '/cache', element: <CachePage /> },
       { path: '/provedores', element: <ProvidersPage /> },
       { path: '/ingestao', element: <IngestionPage /> },
+      { path: '/ingestao/:id', element: <IngestionTasksPage /> },
       { path: '/notificacoes', element: <NotificationsPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
@@ -43,7 +46,9 @@ export function App() {
       <TooltipProvider delayDuration={250}>
         <PageMetaProvider>
           <NotificationsProvider>
-            <RouterProvider router={router} />
+            <IngestionLiveProvider>
+              <RouterProvider router={router} />
+            </IngestionLiveProvider>
           </NotificationsProvider>
         </PageMetaProvider>
         <Toaster

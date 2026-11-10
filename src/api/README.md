@@ -68,21 +68,24 @@ precisa do backend.
 
 ## Streams SSE (`sse.ts`)
 
-Os endpoints `/v1/cache/events` e `/v1/notifications/events` não estão em `paths` do contrato (o
-gerador do backend não modela SSE), mas o payload de cada um está: `CacheEvent`/`CacheEventType` e
-`NotificationEvent`/`NotificationEventType`, gerados pelo Orval em `generated/model`. O nome de
-cada evento SSE é o `type` do payload. **Confirmado** (contrato, schemas `CacheEventType` e
-`NotificationEventType`). As telas escutam `Object.values(CacheEventType)` e
-`Object.values(NotificationEventType)`, então um tipo de evento novo no contrato passa a ser
-escutado depois do `npm run api:generate`.
+Os endpoints `/v1/cache/events`, `/v1/notifications/events` e `/v1/ingestion/events` não estão em
+`paths` do contrato (o gerador do backend não modela SSE), mas o payload de cada um está:
+`CacheEvent`/`CacheEventType`, `NotificationEvent`/`NotificationEventType` e
+`IngestionStreamEvent`/`IngestionStreamEventType`, gerados pelo Orval em `generated/model`. O nome
+de cada evento SSE é o `type` do payload. **Confirmado** (contrato, schemas `CacheEventType`,
+`NotificationEventType` e `IngestionStreamEventType`). Quem escuta passa `Object.values(...)` do
+tipo, então um tipo de evento novo no contrato passa a ser escutado depois do `npm run
+api:generate`.
 
 `useEventSource(path, opções)` abre um `EventSource` e devolve `status` (`connecting`, `open`,
 `idle`, `error`), `lastEventAt` e `reconnect()`:
 
 - Escuta os nomes de evento passados em `events` — tipados pelo `type` do payload, então só aceitam
   valores do contrato — e entrega o JSON parseado em `onMessage`.
-- `onOpen` roda a cada (re)conexão — é onde a tela recarrega o estado pelo REST, porque nenhum dos
-  streams tem replay do que foi perdido.
+- `onOpen` roda a cada (re)conexão — é onde a tela recarrega o estado pelo REST, porque os streams
+  de cache e de notificações não têm replay do que foi perdido. O de ingestão dispensa: a primeira
+  mensagem de cada conexão é um `SNAPSHOT` com o estado inteiro
+  ([`src/features/ingestion`](../features/ingestion/README.md)).
 - Em erro, reconecta com espera exponencial (2 s, 4 s… até 30 s).
 - `closeOn` fecha a conexão quando um evento indica que não há mais nada a acompanhar, e o hook
   reconecta depois de `idleRetryMs` (15 s por padrão). É o caso do cache: o backend manda `IDLE` e

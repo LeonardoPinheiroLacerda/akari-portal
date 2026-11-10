@@ -26,6 +26,8 @@
  * - `RUNNING` — rodando os steps.
  * - `WAITING_CURATION` — algum step não conseguiu decidir sozinho e espera curadoria no
  *   portal; é um resultado esperado, não uma falha.
+ * - `RESOLVED` — esperava curadoria e foi marcada como resolvida manualmente
+ *   (`PUT /v1/ingestion/tasks/{taskId}/resolve`).
  * - `COMPLETED` — todos os steps terminaram.
  * - `FAILED` — algum step falhou.
  * - `CANCELLED` — reservado; nenhum fluxo grava hoje.
@@ -37,6 +39,7 @@ export const IngestionTaskStatus = {
   PENDING: 'PENDING',
   RUNNING: 'RUNNING',
   WAITING_CURATION: 'WAITING_CURATION',
+  RESOLVED: 'RESOLVED',
   COMPLETED: 'COMPLETED',
   FAILED: 'FAILED',
   CANCELLED: 'CANCELLED',

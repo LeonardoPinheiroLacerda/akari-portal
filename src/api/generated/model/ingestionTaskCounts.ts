@@ -21,13 +21,14 @@
 
 /**
  * Quantidade de tarefas da ingestão por status. `total` conta todas as tarefas; uma tarefa
- * está terminada quando está em `waitingCuration`, `completed` ou `failed`.
+ * está terminada quando está em `waitingCuration`, `resolved`, `completed` ou `failed`.
  */
 export interface IngestionTaskCounts {
   total: number;
   pending: number;
   running: number;
   waitingCuration: number;
+  resolved: number;
   completed: number;
   failed: number;
 }
