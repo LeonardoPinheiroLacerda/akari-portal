@@ -2,11 +2,12 @@
 
 Estado ao vivo da ingestão, compartilhado pelo app inteiro, e os rótulos dos status do domínio.
 
-| Arquivo                                                  | Papel                                                                                                       |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| [`IngestionLiveProvider.tsx`](IngestionLiveProvider.tsx) | Escuta o stream `/v1/ingestion/events` e mantém o cache da ingestão atual.                                  |
-| [`labels.ts`](labels.ts)                                 | Rótulos e tons dos status, as etapas na ordem (com a aba do item de cada uma), ícones dos eventos.          |
-| [`queries.ts`](queries.ts)                               | `useIngestionById` (a atual ao vivo; as demais procuradas no histórico) e o tamanho da página do histórico. |
+| Arquivo                                                  | Papel                                                                                                                                  |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| [`IngestionHeader.tsx`](IngestionHeader.tsx)             | Andamento de uma ingestão (status, horários, estimativa de término, barra das tarefas), usado na Home e nas duas telas de ingestão.    |
+| [`IngestionLiveProvider.tsx`](IngestionLiveProvider.tsx) | Escuta o stream `/v1/ingestion/events` e mantém o cache da ingestão atual.                                                             |
+| [`labels.ts`](labels.ts)                                 | Rótulos e tons dos status, as etapas na ordem (com a aba do item de cada uma), ícones dos eventos, durações e a estimativa de término. |
+| [`queries.ts`](queries.ts)                               | `useIngestionById` (a atual ao vivo; as demais procuradas no histórico) e o tamanho da página do histórico.                            |
 
 ## Ingestão atual ao vivo
 
@@ -33,3 +34,10 @@ o provider recarrega a ingestão atual pelo REST, sem cancelar uma recarga em an
 Quando uma ingestão começa ou termina, o provider recarrega o histórico (`invalidateHistory`, só as
 chaves de `GET /v1/ingestion`). Quando termina, também invalida as consultas de catálogo e de anime,
 que as etapas alteraram.
+
+## Estimativa de término
+
+`estimateRemaining` divide o tempo desde o início da ingestão pelas tarefas já terminadas (em
+qualquer desfecho) e multiplica pelas que faltam (na fila e rodando). Só existe enquanto a ingestão
+roda e depois que a primeira tarefa termina; o ritmo varia de pasta pra pasta, então é uma
+aproximação.

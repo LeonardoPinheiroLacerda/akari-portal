@@ -12,7 +12,7 @@ import { useCurrentIngestion, useIngestionLive } from '@/features/ingestion/Inge
 import { formatElapsed, INGESTION_STATUS, isFinished } from '@/features/ingestion/labels'
 import { HISTORY_PAGE_SIZE } from '@/features/ingestion/queries'
 import { formatDateTime, pluralize } from '@/lib/format'
-import { IngestionHeader, LiveChip, TaskBar } from './IngestionHeader'
+import { IngestionHeader, LiveChip, TaskBar } from '@/features/ingestion/IngestionHeader'
 
 /**
  * A ingestão em andamento ou, sem nenhuma, a última — sempre a mesma que o stream mantém. Mostrar

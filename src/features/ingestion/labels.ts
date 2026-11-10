@@ -3,6 +3,7 @@ import type {
   IngestionStatus,
   IngestionStep,
   IngestionStepStatus,
+  IngestionSummary,
   IngestionTaskStatus,
   IngestionTaskSummary,
 } from '@/api/generated/model'
@@ -82,11 +83,32 @@ export const isFinished = (status: IngestionStatus) => status !== 'PENDING' && s
 /** Duração legível entre dois instantes (`fim` ausente = agora). */
 export function formatElapsed(start?: string | null, end?: string | null, now = Date.now()) {
   if (!start) return '—'
-  const s = Math.max(0, Math.round(((end ? new Date(end).getTime() : now) - new Date(start).getTime()) / 1000))
+  return formatSeconds(((end ? new Date(end).getTime() : now) - new Date(start).getTime()) / 1000)
+}
+
+/** Duração legível de uma quantidade de segundos ("1 h 5 min", "3 min 12 s", "< 1 s"). */
+export function formatSeconds(seconds: number) {
+  const s = Math.max(0, Math.round(seconds))
   const h = Math.floor(s / 3600)
   const m = Math.floor((s % 3600) / 60)
   const sec = s % 60
   if (h) return `${h} h ${m} min`
   if (m) return `${m} min ${sec} s`
   return sec ? `${sec} s` : '< 1 s'
+}
+
+/** Tarefas que já terminaram, em qualquer desfecho. */
+export const finishedTasks = (i: IngestionSummary) =>
+  i.taskCounts.completed + i.taskCounts.resolved + i.taskCounts.waitingCuration + i.taskCounts.failed
+
+/**
+ * Segundos que faltam para a ingestão em andamento terminar, pelo ritmo das tarefas até agora
+ * (tempo desde o início dividido pelas terminadas). `null` se ela não está rodando ou se nenhuma
+ * tarefa terminou ainda.
+ */
+export function estimateRemaining(i: IngestionSummary, now = Date.now()) {
+  const done = finishedTasks(i)
+  if (i.status !== 'RUNNING' || !i.startedAt || done === 0) return null
+  const perTask = (now - new Date(i.startedAt).getTime()) / 1000 / done
+  return perTask * (i.taskCounts.pending + i.taskCounts.running)
 }

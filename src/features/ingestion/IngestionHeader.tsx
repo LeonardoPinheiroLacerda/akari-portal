@@ -2,7 +2,17 @@ import { useEffect, useState } from 'react'
 import type { IngestionSummary, IngestionTaskCounts, IngestionTaskSummary } from '@/api/generated/model'
 import type { SseStatus } from '@/api/sse'
 import { Chip, type Tone } from '@/components/ui/chip'
-import { formatElapsed, INGESTION_STATUS, isFinished, RESOLVED_COLOR, stepInfo, toneColor } from '@/features/ingestion/labels'
+import {
+  estimateRemaining,
+  finishedTasks,
+  formatElapsed,
+  formatSeconds,
+  INGESTION_STATUS,
+  isFinished,
+  RESOLVED_COLOR,
+  stepInfo,
+  toneColor,
+} from '@/features/ingestion/labels'
 import { formatDateTime, formatTime, pluralize } from '@/lib/format'
 
 export type TaskFilter = 'attention' | 'all' | 'completed' | 'queue'
@@ -101,7 +111,8 @@ export function IngestionHeader({
   const c = ingestion.taskCounts
   const status = INGESTION_STATUS[ingestion.status]
   useTick(!isFinished(ingestion.status))
-  const done = c.completed + c.resolved + c.waitingCuration + c.failed
+  const done = finishedTasks(ingestion)
+  const remaining = estimateRemaining(ingestion)
   const current = ingestion.currentTask
 
   return (
@@ -117,6 +128,7 @@ export function IngestionHeader({
       <div className="flex flex-wrap gap-x-6 gap-y-1 text-13 text-muted">
         <span>Disparada {formatDateTime(ingestion.createdAt)}</span>
         {ingestion.startedAt && <span>Duração {formatElapsed(ingestion.startedAt, ingestion.completedAt)}</span>}
+        {remaining != null && <span>Cerca de {formatSeconds(remaining)} restantes</span>}
         <span>
           {done.toLocaleString('pt-BR')} de {pluralize(c.total, 'tarefa', 'tarefas')} terminadas
         </span>

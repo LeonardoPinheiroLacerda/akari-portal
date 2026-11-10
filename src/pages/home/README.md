@@ -4,22 +4,32 @@ Tela **Home** (`/`, "Visão geral"): resumo do estado do sistema e atalhos para 
 ação. A pasta `src/pages` também guarda o [`NotFoundPage.tsx`](../NotFoundPage.tsx), a página de
 rota inexistente com o botão de voltar à Home.
 
-| Arquivo                        | Papel                                                                       |
-| ------------------------------ | --------------------------------------------------------------------------- |
-| [`HomePage.tsx`](HomePage.tsx) | Cartões de resumo, notificações recentes e títulos que precisam de atenção. |
+| Arquivo                        | Papel                                                                                 |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| [`HomePage.tsx`](HomePage.tsx) | Cartões de resumo, ingestão, notificações recentes e títulos que precisam de atenção. |
 
 ## Cartões de resumo
 
-| Cartão                 | Valor                                                       | Detalhe                                           |
-| ---------------------- | ----------------------------------------------------------- | ------------------------------------------------- |
-| Pastas no catálogo     | total de pastas (`totalElements` da listagem)               | quantas têm anime vinculado (filtro `hasAnilist`) |
-| Downloads pendentes    | baixando + na fila + com falha                              | a soma de cada estado                             |
-| Notificações não lidas | contador de não lidas do provider de notificações           | quantos erros não lidos                           |
-| Provedores conectados  | conectados / cadastrados, pelo último teste deste navegador | sem conexão e sem teste                           |
+| Cartão                 | Valor                                                       | Detalhe                                                                                            |
+| ---------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Ingestão               | tarefas terminadas / total da ingestão atual (ou da última) | rodando: status e estimativa de término; terminada: há quanto tempo e quantas ficaram em curadoria |
+| Pastas no catálogo     | total de pastas (`totalElements` da listagem)               | quantas têm anime vinculado (filtro `hasAnilist`)                                                  |
+| Downloads pendentes    | baixando + na fila + com falha                              | a soma de cada estado                                                                              |
+| Notificações não lidas | contador de não lidas do provider de notificações           | quantos erros não lidos                                                                            |
+| Provedores conectados  | conectados / cadastrados, pelo último teste deste navegador | sem conexão e sem teste                                                                            |
 
 - As contagens vêm do `totalElements` de listagens de 1 linha com o filtro certo, sem contar no
   portal.
 - Os erros não lidos são contados entre as 50 notificações mais recentes, não sobre todas.
+
+## Ingestão
+
+Tudo vem da ingestão atual (ou da última) mantida ao vivo pelo stream (`useCurrentIngestion`), sem
+consulta própria; a seção some se nunca houve ingestão.
+
+- **Ingestão em andamento / Última ingestão** — o mesmo `IngestionHeader` da tela de ingestão:
+  status, horários, estimativa de término, a barra das tarefas e a tarefa em execução (que abre o
+  painel dela). "Ver tarefas" abre `/ingestao/:id`.
 
 ## Notificações recentes
 

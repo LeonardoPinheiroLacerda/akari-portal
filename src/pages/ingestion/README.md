@@ -13,7 +13,6 @@ Telas de **Ingestão**. O trabalho em si roda no backend; o portal dispara e aco
 | -------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | [`IngestionPage.tsx`](IngestionPage.tsx)           | `/ingestao`: formulário, navegador de pastas do provedor (`FolderBrowser`) e as seções. |
 | [`IngestionOverview.tsx`](IngestionOverview.tsx)   | Seções "Em andamento" e "Histórico".                                                    |
-| [`IngestionHeader.tsx`](IngestionHeader.tsx)       | Andamento de uma ingestão (status, horários, barra das tarefas), usado nas duas telas.  |
 | [`IngestionTasksPage.tsx`](IngestionTasksPage.tsx) | `/ingestao/:id`: lista de tarefas com filtros e o atalho para a curadoria.              |
 | [`TaskPanel.tsx`](TaskPanel.tsx)                   | Painel lateral com a linha do tempo de uma tarefa.                                      |
 

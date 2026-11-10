@@ -14,7 +14,7 @@ import { useIngestionLive } from '@/features/ingestion/IngestionLiveProvider'
 import { blockedStep, needsAttention, STEP_STATUS, STEPS, TASK_STATUS, toneColor } from '@/features/ingestion/labels'
 import { useIngestionById, useResolveTask } from '@/features/ingestion/queries'
 import { cn } from '@/lib/utils'
-import { IngestionHeader, type TaskFilter } from './IngestionHeader'
+import { IngestionHeader, type TaskFilter } from '@/features/ingestion/IngestionHeader'
 import { TaskPanel } from './TaskPanel'
 
 const PAGE_SIZE = 25

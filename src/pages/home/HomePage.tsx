@@ -1,4 +1,5 @@
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import type { IngestionSummary } from '@/api/generated/model'
 import { useListCaches } from '@/api/generated/endpoints/cache/cache'
 import { useListFolders } from '@/api/generated/endpoints/media-folder/media-folder'
 import { useListNotifications } from '@/api/generated/endpoints/notification/notification'
@@ -9,6 +10,9 @@ import { Icon } from '@/components/ui/icon'
 import { Section } from '@/components/ui/section'
 import { ErrorState, Loading } from '@/components/ui/states'
 import { Thumb } from '@/components/ui/thumb'
+import { IngestionHeader, LiveChip } from '@/features/ingestion/IngestionHeader'
+import { useCurrentIngestion, useIngestionLive } from '@/features/ingestion/IngestionLiveProvider'
+import { estimateRemaining, finishedTasks, formatSeconds, INGESTION_STATUS, isFinished } from '@/features/ingestion/labels'
 import { REVIEW } from '@/features/item/labels'
 import { useNotificationsLive } from '@/features/notifications/NotificationsProvider'
 import { LEVEL, notificationHead } from '@/features/notifications/level'
@@ -30,6 +34,17 @@ function Stat({ label, value, note }: { label: string; value: React.ReactNode; n
   )
 }
 
+/** Nota do cartão de ingestão: o andamento, ou quando terminou e o que ficou para a curadoria. */
+function ingestionNote(i: IngestionSummary) {
+  const status = INGESTION_STATUS[i.status].label
+  if (!isFinished(i.status)) {
+    const remaining = estimateRemaining(i)
+    return remaining != null ? `${status} · cerca de ${formatSeconds(remaining)}` : status
+  }
+  const curation = i.taskCounts.waitingCuration
+  return `${status} ${formatRelative(i.completedAt)}${curation ? ` · ${curation.toLocaleString('pt-BR')} em curadoria` : ''}`
+}
+
 export function HomePage() {
   usePageMeta('Visão geral')
   const navigate = useNavigate()
@@ -44,6 +59,9 @@ export function HomePage() {
   const notifs = useListNotifications({ page: 0, size: 50 })
   const { providers } = useProviders()
   const health = useProviderHealth()
+  const current = useCurrentIngestion()
+  const live = useIngestionLive()
+  const ingestion = current.data
 
   const bound = boundQ.data?.totalElements
   const downloading = pending.data?.data.filter((c) => c.status === 'DOWNLOADING').length ?? 0
@@ -63,6 +81,15 @@ export function HomePage() {
   return (
     <>
       <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]">
+        <Stat
+          label={ingestion && !isFinished(ingestion.status) ? 'Ingestão em andamento' : 'Última ingestão'}
+          value={
+            ingestion
+              ? `${finishedTasks(ingestion).toLocaleString('pt-BR')} / ${ingestion.taskCounts.total.toLocaleString('pt-BR')}`
+              : '—'
+          }
+          note={ingestion ? ingestionNote(ingestion) : current.isLoading ? 'Carregando…' : 'Nenhuma ingestão ainda'}
+        />
         <Stat
           label="Pastas no catálogo"
           value={folders.data?.totalElements.toLocaleString('pt-BR') ?? '—'}
@@ -89,6 +116,23 @@ export function HomePage() {
           }
         />
       </div>
+
+      {current.isError && <ErrorState error={current.error} onRetry={() => current.refetch()} />}
+      {ingestion && (
+        <Section
+          title={isFinished(ingestion.status) ? 'Última ingestão' : 'Ingestão em andamento'}
+          actions={
+            <>
+              <LiveChip {...live} />
+              <Button asChild size="sm" variant="primary">
+                <Link to={`/ingestao/${ingestion.id}`}>Ver tarefas</Link>
+              </Button>
+            </>
+          }
+        >
+          <IngestionHeader ingestion={ingestion} onOpenTask={(t) => navigate(`/ingestao/${ingestion.id}?tarefa=${t.id}`)} />
+        </Section>
+      )}
 
       <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))]">
         <Section
