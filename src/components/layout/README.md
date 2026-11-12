@@ -7,7 +7,7 @@ conteúdo dentro dele.
 | Arquivo                          | Papel                                                                                                    |
 | -------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | [`AppLayout.tsx`](AppLayout.tsx) | Junta menu, cabeçalho e conteúdo; guarda o estado do menu e do tema; mostra o aviso de notificação nova. |
-| [`Sidebar.tsx`](Sidebar.tsx)     | Menu lateral com as entradas de navegação (`NAV`), expansível.                                           |
+| [`Sidebar.tsx`](Sidebar.tsx)     | Menu lateral com as entradas de navegação em grupos (`NAV_GROUPS`), expansível.                          |
 | [`Header.tsx`](Header.tsx)       | Título e breadcrumb da tela, botão de tema e atalho para as notificações.                                |
 | [`PageMeta.tsx`](PageMeta.tsx)   | Contexto do título e breadcrumb do cabeçalho (`usePageMeta`).                                            |
 
@@ -27,15 +27,20 @@ de Notificações.
 - Quando chega uma notificação nova pelo stream, aparece um aviso no topo do conteúdo por 6
   segundos; clicar nele leva a Notificações. O estado vem de `useNotificationsLive`
   ([`src/features/notifications`](../../features/notifications)), que também alimenta o contador de
-  não lidas do menu e do cabeçalho.
+  não lidas do cabeçalho.
 
 ## Sidebar
 
-- As entradas ficam em `NAV`, na ordem do menu. Uma entrada fica ativa na própria rota e nas rotas
-  abaixo dela — "Catálogo" continua ativo nas páginas de um item (`/catalogo/:id/...`); "Home" usa
-  `end` para só ficar ativa em `/`.
-- Recolhido (68 px), o menu mostra só os ícones, com o nome num tooltip. Expandido (248 px),
-  mostra os nomes e o contador de não lidas em Notificações.
+- As entradas ficam em grupos, na ordem do menu: Visão geral; **Biblioteca** (Catálogo,
+  Franquias); **Atividade** (Ingestão, Cache) — em `NAV_GROUPS` — e **Configuração**
+  (Provedores, Preferências), fixo no rodapé, acima de "Recolher menu" (`SETTINGS_GROUP`).
+- Uma entrada fica ativa na própria rota e nas rotas abaixo dela — "Catálogo" continua ativo nas
+  páginas de um item (`/catalogo/:id/...`) e "Ingestão" em `/ingestao/:id`; "Visão geral" usa `end`
+  para só ficar ativa em `/`.
+- Expandido (248 px), o menu mostra o título de cada grupo e os nomes. Recolhido (68 px), mostra
+  só os ícones, com o nome num tooltip, e uma linha separando os grupos.
+- Notificações não tem entrada no menu: o acesso é pelo sino do cabeçalho, que mostra o contador de
+  não lidas.
 - O estado ativo é calculado com `useMatch` no `NavItem`, e não pelo `className` em função do
   `NavLink`, porque o tooltip junta o `className` do filho como string (ver
   [`../ui/README.md`](../ui/README.md#cuidados)).

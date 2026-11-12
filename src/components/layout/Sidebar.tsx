@@ -3,19 +3,37 @@ import { Icon } from '@/components/ui/icon'
 import { Tooltip } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
-export const NAV = [
-  { to: '/', label: 'Home', icon: 'home', end: true },
-  // O Item de Catálogo só é aberto a partir do Catálogo; a entrada fica ativa nas páginas do item.
-  { to: '/catalogo', label: 'Catálogo', icon: 'video_library' },
-  { to: '/franquias', label: 'Franquias', icon: 'account_tree' },
-  { to: '/preferencias', label: 'Preferências', icon: 'tune' },
-  { to: '/cache', label: 'Cache', icon: 'memory' },
-  { to: '/provedores', label: 'Provedores', icon: 'dns' },
-  { to: '/ingestao', label: 'Ingestão', icon: 'download' },
-  { to: '/notificacoes', label: 'Notificações', icon: 'notifications', badge: true },
-] as const
+type NavEntry = { to: string; label: string; icon: string; end?: boolean }
 
-export function Sidebar({ expanded, onToggle, unread }: { expanded: boolean; onToggle: () => void; unread: number }) {
+/** Grupos do menu, na ordem em que aparecem; o de configuração fica fixo no rodapé. */
+const NAV_GROUPS: { title?: string; items: NavEntry[] }[] = [
+  { items: [{ to: '/', label: 'Visão geral', icon: 'home', end: true }] },
+  {
+    title: 'Biblioteca',
+    items: [
+      // O Item de Catálogo só é aberto a partir do Catálogo; a entrada fica ativa nas páginas do item.
+      { to: '/catalogo', label: 'Catálogo', icon: 'video_library' },
+      { to: '/franquias', label: 'Franquias', icon: 'account_tree' },
+    ],
+  },
+  {
+    title: 'Atividade',
+    items: [
+      { to: '/ingestao', label: 'Ingestão', icon: 'download' },
+      { to: '/cache', label: 'Cache', icon: 'memory' },
+    ],
+  },
+]
+
+const SETTINGS_GROUP = {
+  title: 'Configuração',
+  items: [
+    { to: '/provedores', label: 'Provedores', icon: 'dns' },
+    { to: '/preferencias', label: 'Preferências', icon: 'tune' },
+  ] as NavEntry[],
+}
+
+export function Sidebar({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) {
   return (
     <aside
       className="flex shrink-0 flex-col overflow-hidden border-r border-line bg-panel transition-[width] duration-[220ms] ease-in-out"
@@ -33,10 +51,22 @@ export function Sidebar({ expanded, onToggle, unread }: { expanded: boolean; onT
         )}
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
-        {NAV.map((item) => (
-          <NavItem key={item.label} item={item} expanded={expanded} unread={unread} />
+      <nav className="flex flex-1 flex-col overflow-y-auto p-3" aria-label="Menu principal">
+        {NAV_GROUPS.map((g, i) => (
+          <NavGroup key={g.title ?? i} title={g.title} first={i === 0} expanded={expanded}>
+            {g.items.map((item) => (
+              <NavItem key={item.to} item={item} expanded={expanded} />
+            ))}
+          </NavGroup>
         ))}
+      </nav>
+
+      <nav className="flex flex-col border-t border-line px-3 pb-1 pt-1" aria-label={SETTINGS_GROUP.title}>
+        <NavGroup title={SETTINGS_GROUP.title} first expanded={expanded}>
+          {SETTINGS_GROUP.items.map((item) => (
+            <NavItem key={item.to} item={item} expanded={expanded} />
+          ))}
+        </NavGroup>
       </nav>
 
       <div className="border-t border-line p-3">
@@ -58,12 +88,40 @@ export function Sidebar({ expanded, onToggle, unread }: { expanded: boolean; onT
   )
 }
 
+/**
+ * Bloco de itens do menu. Expandido, mostra o título do grupo; recolhido, uma linha separa os
+ * grupos, já que não cabe texto.
+ */
+function NavGroup({
+  title,
+  first,
+  expanded,
+  children,
+}: {
+  title?: string
+  first?: boolean
+  expanded: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <div className={cn('flex flex-col gap-1', !first && 'mt-3')}>
+      {title &&
+        (expanded ? (
+          <span className="px-3 pb-1 pt-2 font-mono text-xs uppercase tracking-[.08em] text-muted">{title}</span>
+        ) : (
+          !first && <span role="separator" className="mx-2.5 mb-2 border-t border-line" />
+        ))}
+      {children}
+    </div>
+  )
+}
+
 /*
  * O Trigger do tooltip (asChild) junta o className do filho como string: um className em função,
  * como o do NavLink, viraria o código-fonte da função. Por isso o estado ativo vem do useMatch.
  */
-function NavItem({ item, expanded, unread }: { item: (typeof NAV)[number]; expanded: boolean; unread: number }) {
-  const end = 'end' in item ? item.end : false
+function NavItem({ item, expanded }: { item: NavEntry; expanded: boolean }) {
+  const end = item.end ?? false
   const on = useMatch({ path: item.to, end }) != null
   return (
     <Tooltip content={item.label} side="right" disabled={expanded}>
@@ -79,11 +137,6 @@ function NavItem({ item, expanded, unread }: { item: (typeof NAV)[number]; expan
       >
         <Icon name={item.icon} size={21} fill={on} className="w-[22px] text-center" />
         {expanded && <span className="flex-1 truncate">{item.label}</span>}
-        {'badge' in item && expanded && unread > 0 && !on && (
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-[10px] bg-accent px-1.5 text-xs font-bold text-accent-ink">
-            {unread > 99 ? '99+' : unread}
-          </span>
-        )}
       </NavLink>
     </Tooltip>
   )

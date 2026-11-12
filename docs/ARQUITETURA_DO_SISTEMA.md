@@ -133,7 +133,7 @@ calculadas no cliente.
 ## Diretrizes para futuras implementações
 
 - **Tela nova:** uma pasta em `src/pages/<tela>` com o próprio `README.md`, rota em `App.tsx`,
-  entrada em `NAV` no `Sidebar` se for de navegação, e `usePageMeta` para o título.
+  entrada no grupo certo de `NAV_GROUPS` no `Sidebar` se for de navegação, e `usePageMeta` para o título.
 - **Lógica usada por mais de uma tela** vai para `src/features/<área>`; componente visual genérico,
   para `src/components/ui`.
 - **Mudança de contrato:** `npm run api:generate` com o backend no ar, ajustar as telas, e invalidar o grupo certo depois

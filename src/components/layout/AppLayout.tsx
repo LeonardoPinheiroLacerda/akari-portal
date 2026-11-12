@@ -20,7 +20,7 @@ export function AppLayout() {
 
   return (
     <div className="flex h-screen min-h-[560px] overflow-hidden bg-bg text-base text-text">
-      <Sidebar expanded={expanded} onToggle={() => setExpanded(!expanded)} unread={unread} />
+      <Sidebar expanded={expanded} onToggle={() => setExpanded(!expanded)} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header theme={theme} onToggleTheme={toggle} unread={unread} />
         <main className="flex-1 overflow-y-auto px-8 pb-16 pt-7 max-md:px-4">
