@@ -49,4 +49,5 @@ export const invalidate = {
   // A disponibilidade de um arquivo para reprodução deriva do cache.
   cache: () => invalidatePrefixes('/v1/cache/', '/v1/playback/files/'),
   settings: () => invalidatePrefixes('/v1/settings'),
+  smartLists: () => invalidatePrefixes('/v1/smart-lists'),
 }

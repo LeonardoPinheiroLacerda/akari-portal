@@ -10,12 +10,14 @@ export function DialogContent({
   title,
   description,
   width = 560,
+  onEscapeKeyDown,
 }: {
   className?: string
   children: React.ReactNode
   title: React.ReactNode
   description?: React.ReactNode
   width?: number
+  onEscapeKeyDown?: (e: KeyboardEvent) => void
 }) {
   return (
     <DialogPrimitive.Portal>
@@ -26,6 +28,7 @@ export function DialogContent({
           className,
         )}
         style={{ maxWidth: width }}
+        onEscapeKeyDown={onEscapeKeyDown}
       >
         <div className="flex items-start gap-3 border-b border-line px-5 py-4">
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">

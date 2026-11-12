@@ -14,6 +14,7 @@ const NAV_GROUPS: { title?: string; items: NavEntry[] }[] = [
       // O Item de Catálogo só é aberto a partir do Catálogo; a entrada fica ativa nas páginas do item.
       { to: '/catalogo', label: 'Catálogo', icon: 'video_library' },
       { to: '/franquias', label: 'Franquias', icon: 'account_tree' },
+      { to: '/listas', label: 'Listas', icon: 'featured_play_list' },
     ],
   },
   {

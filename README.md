@@ -7,7 +7,7 @@ o admin:
 - ingere diretórios no catálogo;
 - faz a curadoria dos títulos: vínculo com a AniList e o TMDB, overrides de título, sinopse e
   imagens, pareamento dos arquivos com os episódios do TMDB e status de revisão;
-- organiza as obras em franquias;
+- organiza as obras em franquias e monta as listas por critério que os clientes mostram;
 - testa a reprodução;
 - acompanha o cache de vídeo e as notificações;
 - ajusta as preferências do sistema.
@@ -99,6 +99,7 @@ src/
 | `/catalogo`                | Catálogo de pastas, com filtros de curadoria                                          |
 | `/catalogo/:folderId/:aba` | Item do catálogo: abas AniList, TMDB, TMDB Overrides, TMDB Episódio Pair e Reprodução |
 | `/franquias/:key?`         | Franquias: a lista, uma franquia (pelo `anilistId` da raiz) ou as obras ocultas       |
+| `/listas/:listId?`         | Listas por critério que os clientes mostram, com os títulos de cada uma               |
 | `/cache`                   | Fila de downloads e arquivos em cache                                                 |
 | `/provedores`              | Provedores de arquivos                                                                |
 | `/ingestao`                | Ingestão de diretórios                                                                |

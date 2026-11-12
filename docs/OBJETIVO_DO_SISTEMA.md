@@ -44,6 +44,8 @@ se referem a esse app futuro.
 4. **Organizar as franquias** — tela Franquias: cada obra pertence a uma franquia só; a regra
    automática do backend é o ponto de partida, e o admin move obras entre franquias, cria franquias
    próprias, junta franquias ou oculta obras.
+   Na tela Listas, monta as listas que os clientes mostram ("Comédias recentes", "Mais
+   populares"): cada uma é um filtro e uma ordem, e o backend escolhe as franquias.
 5. **Testar a reprodução** — aba Reprodução; arquivo de provedor remoto precisa ser baixado para o
    cache antes.
 6. **Acompanhar** — Home (resumo e títulos pendentes), Cache (fila e arquivos baixados) e
@@ -71,6 +73,9 @@ se referem a esse app futuro.
 - Status de revisão de cada título, visível e acionável em todas as abas.
 - Organização das franquias: lista com busca por qualquer obra, grafo das relações, prévia de como
   os clientes mostram a franquia e as ações de mover, remover, juntar e ocultar.
+- Listas por critério para os clientes: cadastro, ordem de exibição, filtros adicionados um a um em
+  pílulas (gêneros, tags, estúdios, status, formato, ano, notas, popularidade e conteúdo adulto, com
+  sugestões dos nomes da AniList) e a prévia dos títulos.
 - Cache de vídeo ao vivo: fila de downloads com progresso, tentar de novo, cancelar, deletar e ações
   em massa.
 - Notificações ao vivo, com contador de não lidas e atalho para o título.

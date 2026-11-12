@@ -32,7 +32,7 @@ de Notificações.
 ## Sidebar
 
 - As entradas ficam em grupos, na ordem do menu: Visão geral; **Biblioteca** (Catálogo,
-  Franquias); **Atividade** (Ingestão, Cache) — em `NAV_GROUPS` — e **Configuração**
+  Franquias, Listas); **Atividade** (Ingestão, Cache) — em `NAV_GROUPS` — e **Configuração**
   (Provedores, Preferências), fixo no rodapé, acima de "Recolher menu" (`SETTINGS_GROUP`).
 - Uma entrada fica ativa na própria rota e nas rotas abaixo dela — "Catálogo" continua ativo nas
   páginas de um item (`/catalogo/:id/...`) e "Ingestão" em `/ingestao/:id`; "Visão geral" usa `end`

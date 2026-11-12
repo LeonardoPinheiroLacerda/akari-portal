@@ -18,6 +18,7 @@ import { NotFoundPage } from '@/pages/NotFoundPage'
 import { NotificationsPage } from '@/pages/notifications/NotificationsPage'
 import { PreferencesPage } from '@/pages/preferences/PreferencesPage'
 import { ProvidersPage } from '@/pages/providers/ProvidersPage'
+import { SmartListsPage } from '@/pages/smart-lists/SmartListsPage'
 
 const router = createBrowserRouter([
   {
@@ -29,6 +30,8 @@ const router = createBrowserRouter([
       { path: '/catalogo/:folderId/:tab', element: <ItemPage /> },
       { path: '/franquias', element: <FranchisesPage /> },
       { path: '/franquias/:key', element: <FranchisesPage /> },
+      { path: '/listas', element: <SmartListsPage /> },
+      { path: '/listas/:listId', element: <SmartListsPage /> },
       { path: '/preferencias', element: <PreferencesPage /> },
       { path: '/cache', element: <CachePage /> },
       { path: '/provedores', element: <ProvidersPage /> },

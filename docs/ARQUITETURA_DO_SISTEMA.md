@@ -111,7 +111,10 @@ READMEs:
 - troca de vínculo AniList/TMDB em duas chamadas não atômicas, legenda selecionável ou queimada
   deduzida pelo codec (`pages/item`);
 - troca do início de uma franquia em duas chamadas não atômicas (`pages/franchises`);
-- ações em massa do cache, um `DELETE` por linha (`pages/cache`).
+- ações em massa do cache, um `DELETE` por linha (`pages/cache`);
+- gêneros, tags, estúdios, status e formatos da AniList oferecidos no filtro das listas (cópias da
+  AniList em `anilistGenres.ts`, `anilistTags.ts` e `anilistStudios.ts`), e a reordenação das listas
+  em um `PUT` por lista, não atômica (`pages/smart-lists`).
 
 **Lacunas do contrato ou do backend que afetam o portal** — **Backlog real**, correção no `akari`:
 
@@ -121,6 +124,13 @@ READMEs:
 - `AnimeResponse` sem a pasta do anime: os links da tela Franquias dependem do grafo de relações
   (`pages/franchises`);
 - chamadas sem timeout no mutator (`src/api`).
+
+Ainda sem decisão do mantenedor (`pages/smart-lists`):
+
+- o contrato não lista os gêneros, as tags e os estúdios, então as listas copiadas da AniList podem
+  ficar defasadas;
+- nos filtros de franquia basta um membro casar, então um especial com um gênero ou uma tag traz a
+  franquia inteira para listas de tema (ex.: Boku no Hero Academia numa lista de Sports).
 
 **Outros acoplamentos aceitos** (**Aceito**, confirmado pelo mantenedor): invalidação por grupo
 amplo, reconexão periódica do stream de cache ocioso, último teste de conexão guardado só no
