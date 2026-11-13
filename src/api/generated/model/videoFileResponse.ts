@@ -23,6 +23,7 @@ import type { FileId } from './fileId';
 import type { FileSizeBytes } from './fileSizeBytes';
 import type { FolderId } from './folderId';
 import type { TmdbFilePairingResponse } from './tmdbFilePairingResponse';
+import type { WatchProgress } from './watchProgress';
 
 /**
  * Vista pública de um arquivo ingerido
@@ -37,4 +38,6 @@ export interface VideoFileResponse {
   createdAt: string;
   /** Pairing TMDB do arquivo, quando houver. Enriquecido só na listagem (`GET /video-files`); `null` nas leituras que não computam esse campo. */
   tmdbPairing?: TmdbFilePairingResponse | null;
+  /** Progresso do usuário no arquivo. Preenchido só na listagem de episódios do anime com `userId`; `null` nas demais leituras e em arquivo que o usuário nunca abriu. */
+  watchProgress?: WatchProgress | null;
 }

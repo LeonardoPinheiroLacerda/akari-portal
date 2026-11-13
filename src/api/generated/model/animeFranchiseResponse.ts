@@ -44,4 +44,10 @@ export interface AnimeFranchiseResponse {
      * @nullable
      */
   specials?: AnimeResponse[] | null;
+  /**
+     * Se o anime consultado (o `anilistId` da rota, não necessariamente a raiz) está na
+     * lista do usuário. Só preenchido com `userId`; `null` sem ele.
+     * @nullable
+     */
+  inWatchlist?: boolean | null;
 }

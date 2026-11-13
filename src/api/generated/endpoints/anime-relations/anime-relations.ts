@@ -38,6 +38,7 @@ import type {
   AnimePageOkResponse,
   AnimeRelationGraphOkResponse,
   BadRequestResponse,
+  GetAnimeFranchiseParams,
   GetAnimeRelationGraphParams,
   InternalServerErrorResponse,
   ListRelationRootsParams,
@@ -290,12 +291,20 @@ export function useGetAnimeRelationGraph<TData = Awaited<ReturnType<typeof getAn
 
 
 
-export const getGetAnimeFranchiseUrl = (anilistId: number,) => {
+export const getGetAnimeFranchiseUrl = (anilistId: number,
+    params?: GetAnimeFranchiseParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/v1/metadata/animes/${anilistId}/franchise`
+  return stringifiedParams.length > 0 ? `/v1/metadata/animes/${anilistId}/franchise?${stringifiedParams}` : `/v1/metadata/animes/${anilistId}/franchise`
 }
 
 /**
@@ -316,11 +325,16 @@ export const getGetAnimeFranchiseUrl = (anilistId: number,) => {
  * `root`, `seasons`, `movies` e `specials` usam o `AnimeResponse` completo (mesmos campos
  * de `GET /v1/metadata/animes/{anilistId}`, com os mesmos overrides manuais). Sem
  * duplicatas: cada membro aparece em só uma das listas.
+ *
+ * Com `userId`, `inWatchlist` diz se o `anilistId` consultado (o da rota, não
+ * necessariamente a raiz) está na lista do usuário; sem `userId`, vem `null`. `404` se o
+ * usuário não existir.
  * @summary Franquia do anime, já organizada em raiz/temporadas/filmes/especiais
  */
-export const getAnimeFranchise = async (anilistId: number, options?: Parameters<typeof http>[1]): Promise<AnimeFranchiseOkResponse> => {
+export const getAnimeFranchise = async (anilistId: number,
+    params?: GetAnimeFranchiseParams, options?: Parameters<typeof http>[1]): Promise<AnimeFranchiseOkResponse> => {
 
-  return http<AnimeFranchiseOkResponse>(getGetAnimeFranchiseUrl(anilistId),
+  return http<AnimeFranchiseOkResponse>(getGetAnimeFranchiseUrl(anilistId,params),
   {
     ...options,
     method: 'GET'
@@ -333,23 +347,25 @@ export const getAnimeFranchise = async (anilistId: number, options?: Parameters<
 
 
 
-export const getGetAnimeFranchiseQueryKey = (anilistId: number,) => {
+export const getGetAnimeFranchiseQueryKey = (anilistId: number,
+    params?: GetAnimeFranchiseParams,) => {
     return [
-    `/v1/metadata/animes/${anilistId}/franchise`
+    `/v1/metadata/animes/${anilistId}/franchise`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetAnimeFranchiseQueryOptions = <TData = Awaited<ReturnType<typeof getAnimeFranchise>>, TError = NotFoundResponse | InternalServerErrorResponse>(anilistId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnimeFranchise>>, TError, TData>>, request?: SecondParameter<typeof http>}
+export const getGetAnimeFranchiseQueryOptions = <TData = Awaited<ReturnType<typeof getAnimeFranchise>>, TError = NotFoundResponse | InternalServerErrorResponse>(anilistId: number,
+    params?: GetAnimeFranchiseParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnimeFranchise>>, TError, TData>>, request?: SecondParameter<typeof http>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAnimeFranchiseQueryKey(anilistId);
+  const queryKey =  queryOptions?.queryKey ?? getGetAnimeFranchiseQueryKey(anilistId,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAnimeFranchise>>> = ({ signal }) => getAnimeFranchise(anilistId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAnimeFranchise>>> = ({ signal }) => getAnimeFranchise(anilistId,params, { signal, ...requestOptions });
 
 
 
@@ -363,7 +379,8 @@ export type GetAnimeFranchiseQueryError = NotFoundResponse | InternalServerError
 
 
 export function useGetAnimeFranchise<TData = Awaited<ReturnType<typeof getAnimeFranchise>>, TError = NotFoundResponse | InternalServerErrorResponse>(
- anilistId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnimeFranchise>>, TError, TData>> & Pick<
+ anilistId: number,
+    params: undefined |  GetAnimeFranchiseParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnimeFranchise>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof getAnimeFranchise>>,
           TError,
@@ -373,7 +390,8 @@ export function useGetAnimeFranchise<TData = Awaited<ReturnType<typeof getAnimeF
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetAnimeFranchise<TData = Awaited<ReturnType<typeof getAnimeFranchise>>, TError = NotFoundResponse | InternalServerErrorResponse>(
- anilistId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnimeFranchise>>, TError, TData>> & Pick<
+ anilistId: number,
+    params?: GetAnimeFranchiseParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnimeFranchise>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof getAnimeFranchise>>,
           TError,
@@ -383,7 +401,8 @@ export function useGetAnimeFranchise<TData = Awaited<ReturnType<typeof getAnimeF
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useGetAnimeFranchise<TData = Awaited<ReturnType<typeof getAnimeFranchise>>, TError = NotFoundResponse | InternalServerErrorResponse>(
- anilistId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnimeFranchise>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ anilistId: number,
+    params?: GetAnimeFranchiseParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnimeFranchise>>, TError, TData>>, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -391,11 +410,12 @@ export function useGetAnimeFranchise<TData = Awaited<ReturnType<typeof getAnimeF
  */
 
 export function useGetAnimeFranchise<TData = Awaited<ReturnType<typeof getAnimeFranchise>>, TError = NotFoundResponse | InternalServerErrorResponse>(
- anilistId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnimeFranchise>>, TError, TData>>, request?: SecondParameter<typeof http>}
+ anilistId: number,
+    params?: GetAnimeFranchiseParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAnimeFranchise>>, TError, TData>>, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetAnimeFranchiseQueryOptions(anilistId,options)
+  const queryOptions = getGetAnimeFranchiseQueryOptions(anilistId,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

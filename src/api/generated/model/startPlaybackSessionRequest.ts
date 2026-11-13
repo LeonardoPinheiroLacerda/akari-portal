@@ -20,6 +20,7 @@
  */
 import type { FileId } from './fileId';
 import type { TranscodeProfile } from './transcodeProfile';
+import type { UserId } from './userId';
 
 /**
  * Parâmetros para iniciar uma sessão de transcode
@@ -59,4 +60,10 @@ export interface StartPlaybackSessionRequest {
      * preferências.
      */
   subtitleDisabled?: boolean;
+  /**
+     * Usuário que está assistindo. Com ele, a posição enviada nos heartbeats da sessão vira
+     * o progresso do arquivo no histórico do usuário; sem ele, a sessão não grava
+     * histórico. Responde `404` se o usuário não existir.
+     */
+  userId?: UserId | null;
 }

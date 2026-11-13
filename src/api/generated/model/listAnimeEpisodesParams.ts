@@ -20,6 +20,7 @@
  */
 import type { PageParamParameter } from './pageParamParameter';
 import type { SizeParamParameter } from './sizeParamParameter';
+import type { UserIdQueryParamParameter } from './userIdQueryParamParameter';
 
 export type ListAnimeEpisodesParams = {
 /**
@@ -30,4 +31,8 @@ page?: PageParamParameter;
  * Tamanho máximo de itens por página
  */
 size?: SizeParamParameter;
+/**
+ * Id do usuário
+ */
+userId?: UserIdQueryParamParameter;
 };

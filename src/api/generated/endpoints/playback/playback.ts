@@ -44,6 +44,7 @@ import type {
   InternalServerErrorResponse,
   MediaFileOkResponse,
   NotFoundResponse,
+  PlaybackHeartbeatRequestBodyBody,
   PlaylistOkResponse,
   SeekRequestBodyBody,
   ServiceUnavailableResponse,
@@ -718,16 +719,34 @@ export const getHeartbeatPlaybackSessionUrl = (sessionId: string,) => {
  * sessão e devolve a validade restante. O TTL é uma preferência do admin. O cliente deve
  * chamar novamente antes de a validade expirar. Responde `404` se a sessão não existe ou já
  * expirou.
+ *
+ * O corpo é opcional: com `positionSeconds`, numa sessão iniciada com `userId`, grava a
+ * posição atual no histórico do usuário (ver tag `User`).
  * @summary Mantém a sessão viva
  */
-export const heartbeatPlaybackSession = async (sessionId: string, options?: Parameters<typeof http>[1]): Promise<HeartbeatOkResponse> => {
+export const heartbeatPlaybackSession = async (sessionId: string,
+    playbackHeartbeatRequestBodyBody?: PlaybackHeartbeatRequestBodyBody, options?: Parameters<typeof http>[1]): Promise<HeartbeatOkResponse> => {
 
-  return http<HeartbeatOkResponse>(getHeartbeatPlaybackSessionUrl(sessionId),
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return http<HeartbeatOkResponse>(getHeartbeatPlaybackSessionUrl(sessionId),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(playbackHeartbeatRequestBodyBody)
   }
 );}
 
@@ -752,9 +771,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof heartbeatPlaybackSession>>, HeartbeatPlaybackSessionMutationVariables> = (props) => {
-          const {sessionId} = props ?? {};
+          const {sessionId,data} = props ?? {};
 
-          return  heartbeatPlaybackSession(sessionId,requestOptions)
+          return  heartbeatPlaybackSession(sessionId,data,requestOptions)
         }
 
 
@@ -765,9 +784,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type HeartbeatPlaybackSessionMutationResult = NonNullable<Awaited<ReturnType<typeof heartbeatPlaybackSession>>>
-
+    export type HeartbeatPlaybackSessionMutationBody = PlaybackHeartbeatRequestBodyBody | undefined
     export type HeartbeatPlaybackSessionMutationError = NotFoundResponse | InternalServerErrorResponse | ServiceUnavailableResponse
-    export type HeartbeatPlaybackSessionMutationVariables = {sessionId: string}
+    export type HeartbeatPlaybackSessionMutationVariables = {sessionId: string;data?: PlaybackHeartbeatRequestBodyBody}
 
     /**
  * @summary Mantém a sessão viva
