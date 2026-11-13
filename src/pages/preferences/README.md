@@ -16,9 +16,10 @@ botão.
   (`anilist.*`), Reprodução (`playback.*`), Cache de vídeo (`cache.*`) e Outras.
 - Dentro de cada grupo, a ordem é a das chaves no `META`: primeiro o que é preciso para o grupo
   funcionar, depois os ajustes do dia a dia e por fim os técnicos (cache de respostas, diretórios,
-  tempos). No TMDB: token, idioma padrão, conteúdo adulto, os idiomas dos overrides e a validade do
-  cache. Na Reprodução: áudio e legenda padrão, aceleração de hardware, diretório de trabalho e
-  tempo da sessão. Chaves fora do `META` vão para o fim do grupo, na ordem da API.
+  tempos). No TMDB: token, idioma padrão, conteúdo adulto, os idiomas dos overrides e dos
+  episódios e a validade do cache. Na Reprodução: áudio e legenda padrão, aceleração de hardware,
+  diretório de trabalho e tempo da sessão. Chaves fora do `META` vão para o fim do grupo, na ordem
+  da API.
 - Só preferências que já existem no backend aparecem e podem ser alteradas — a API não cria chaves
   novas. **Confirmado** (contrato, `updateSetting`: chave inexistente responde `404`).
 
@@ -26,18 +27,18 @@ botão.
 
 O mapa `META` dá a cada chave conhecida um rótulo, uma explicação e um tipo de controle:
 
-| Tipo        | Controle                                                        | Chaves                                                                                                                                                              |
-| ----------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `path`      | texto                                                           | `cache.dir`, `playback.work.base-dir`                                                                                                                               |
-| `bytes`     | texto em bytes, com o equivalente em GB ao lado                 | `cache.max-size-bytes`                                                                                                                                              |
-| `duration`  | texto ISO-8601, com a duração legível ao lado                   | `playback.session.heartbeat-ttl`, `tmdb.cache.ttl`, `anilist.cache.ttl`                                                                                             |
-| `enum`      | controle segmentado                                             | `playback.transcode.hardware-acceleration` (`NONE`, `VIDEOTOOLBOX`, `NVENC`, `QSV`, `VAAPI`), `playback.default.subtitle-forced` (`false` Completa, `true` Forçada) |
-| `secret`    | senha                                                           | `tmdb.api-key`                                                                                                                                                      |
-| `locale`    | select de idiomas com país (`TMDB_LOCALES`)                     | `tmdb.default-language`                                                                                                                                             |
-| `tmdbLang`  | select de idiomas com país (`TMDB_LOCALES`), com opção vazia    | `tmdb.override.title-language`, `tmdb.override.synopsis-language`, `tmdb.override.fallback-language`                                                                |
-| `langList`  | lista ordenada de idiomas, com subir/descer/remover e adicionar | `tmdb.image.logo-language`                                                                                                                                          |
-| `trackLang` | select de idiomas ISO 639-2 (`ISO639_2`)                        | `playback.default.audio-language`, `playback.default.subtitle-language`                                                                                             |
-| `bool`      | switch                                                          | `tmdb.include-adult`                                                                                                                                                |
+| Tipo        | Controle                                                        | Chaves                                                                                                                                                               |
+| ----------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `path`      | texto                                                           | `cache.dir`, `playback.work.base-dir`                                                                                                                                |
+| `bytes`     | texto em bytes, com o equivalente em GB ao lado                 | `cache.max-size-bytes`                                                                                                                                               |
+| `duration`  | texto ISO-8601, com a duração legível ao lado                   | `playback.session.heartbeat-ttl`, `tmdb.cache.ttl`, `anilist.cache.ttl`                                                                                              |
+| `enum`      | controle segmentado                                             | `playback.transcode.hardware-acceleration` (`NONE`, `VIDEOTOOLBOX`, `NVENC`, `QSV`, `VAAPI`), `playback.default.subtitle-forced` (`false` Completa, `true` Forçada)  |
+| `secret`    | senha                                                           | `tmdb.api-key`                                                                                                                                                       |
+| `locale`    | select de idiomas com país (`TMDB_LOCALES`)                     | `tmdb.default-language`                                                                                                                                              |
+| `tmdbLang`  | select de idiomas com país (`TMDB_LOCALES`), com opção vazia    | `tmdb.override.title-language`, `tmdb.override.synopsis-language`, `tmdb.episode.name-language`, `tmdb.episode.synopsis-language`, `tmdb.override.fallback-language` |
+| `langList`  | lista ordenada de idiomas, com subir/descer/remover e adicionar | `tmdb.image.logo-language`                                                                                                                                           |
+| `trackLang` | select de idiomas ISO 639-2 (`ISO639_2`)                        | `playback.default.audio-language`, `playback.default.subtitle-language`                                                                                              |
+| `bool`      | switch                                                          | `tmdb.include-adult`                                                                                                                                                 |
 
 Os idiomas de faixa usam o código de 3 letras porque o backend compara o valor, sem diferenciar
 maiúsculas, com a tag `language` das faixas do probe, que vem do arquivo (no Matroska, ISO
@@ -55,6 +56,15 @@ próprio código. Vazio é um valor válido nas três
 não ganha o chip "Não configurado". O logo é uma lista em ordem de preferência gravada separada por
 vírgula (`en-US,ja,none`, com `none` para o logo sem idioma) e não usa o idioma de fallback.
 **Confirmado** (`domain/anime/README.md` do backend, "Preenchimento dos overrides").
+
+Os idiomas dos episódios (`tmdb.episode.*`) dão o nome e a sinopse de cada episódio que o
+pareamento grava a partir do TMDB, tanto na [ingestão](../ingestion/README.md) quanto na aba de
+pareamento do item. Sem tradução no idioma escolhido, o texto vem do idioma de fallback
+(`tmdb.override.fallback-language`); vazio é um valor válido, "Padrão do TMDB (inglês)", e não
+ganha o chip "Não configurado". Mudar a preferência não reescreve na hora os episódios já
+pareados: a próxima ingestão da pasta regrava o nome e a sinopse deles no idioma novo.
+**Confirmado** (`domain/tmdb/README.md` do backend, "Idioma dos episódios", e
+`domain/ingestion/README.md`, step `TMDB_FILEPAIR`).
 
 Uma chave fora do mapa aparece com a própria chave como rótulo e um campo de texto (ou senha, se
 for secreta).
