@@ -3,7 +3,11 @@ import { Icon } from '@/components/ui/icon'
 import { Tooltip } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
-type NavEntry = { to: string; label: string; icon: string; end?: boolean }
+/** `external`: link para outro site (ex.: a WebUI do qBittorrent), aberto em nova aba. */
+type NavEntry = { to: string; label: string; icon: string; end?: boolean; external?: boolean }
+
+/** WebUI do qBittorrent da stack do akari (docker-compose), publicada só no localhost. */
+const QBITTORRENT_URL = 'http://localhost:8090'
 
 /** Grupos do menu, na ordem em que aparecem; o de configuração fica fixo no rodapé. */
 const NAV_GROUPS: { title?: string; items: NavEntry[] }[] = [
@@ -15,6 +19,14 @@ const NAV_GROUPS: { title?: string; items: NavEntry[] }[] = [
       { to: '/catalogo', label: 'Catálogo', icon: 'video_library' },
       { to: '/franquias', label: 'Franquias', icon: 'account_tree' },
       { to: '/listas', label: 'Listas', icon: 'featured_play_list' },
+    ],
+  },
+  {
+    title: 'Torrents',
+    items: [
+      { to: '/torrents', label: 'Rastreados', icon: 'radar', end: true },
+      { to: '/torrents/buscar', label: 'Buscar', icon: 'travel_explore' },
+      { to: QBITTORRENT_URL, label: 'qBittorrent', icon: 'cloud_download', external: true },
     ],
   },
   {
@@ -55,9 +67,13 @@ export function Sidebar({ expanded, onToggle }: { expanded: boolean; onToggle: (
       <nav className="flex flex-1 flex-col overflow-y-auto p-3" aria-label="Menu principal">
         {NAV_GROUPS.map((g, i) => (
           <NavGroup key={g.title ?? i} title={g.title} first={i === 0} expanded={expanded}>
-            {g.items.map((item) => (
-              <NavItem key={item.to} item={item} expanded={expanded} />
-            ))}
+            {g.items.map((item) =>
+              item.external ? (
+                <ExternalNavItem key={item.to} item={item} expanded={expanded} />
+              ) : (
+                <NavItem key={item.to} item={item} expanded={expanded} />
+              ),
+            )}
           </NavGroup>
         ))}
       </nav>
@@ -139,6 +155,31 @@ function NavItem({ item, expanded }: { item: NavEntry; expanded: boolean }) {
         <Icon name={item.icon} size={21} fill={on} className="w-[22px] text-center" />
         {expanded && <span className="flex-1 truncate">{item.label}</span>}
       </NavLink>
+    </Tooltip>
+  )
+}
+
+function ExternalNavItem({ item, expanded }: { item: NavEntry; expanded: boolean }) {
+  return (
+    <Tooltip content={item.label} side="right" disabled={expanded}>
+      <a
+        href={item.to}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={`${item.label} (abre em nova aba)`}
+        className={cn(
+          'relative flex h-[42px] shrink-0 items-center gap-3 whitespace-nowrap rounded-rs text-left font-medium text-muted transition-colors hover:bg-side-hover hover:text-text',
+          expanded ? 'px-3' : 'px-[11px]',
+        )}
+      >
+        <Icon name={item.icon} size={21} className="w-[22px] text-center" />
+        {expanded && (
+          <>
+            <span className="flex-1 truncate">{item.label}</span>
+            <Icon name="open_in_new" size={16} />
+          </>
+        )}
+      </a>
     </Tooltip>
   )
 }

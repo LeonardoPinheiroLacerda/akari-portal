@@ -19,6 +19,8 @@ import { NotificationsPage } from '@/pages/notifications/NotificationsPage'
 import { PreferencesPage } from '@/pages/preferences/PreferencesPage'
 import { ProvidersPage } from '@/pages/providers/ProvidersPage'
 import { SmartListsPage } from '@/pages/smart-lists/SmartListsPage'
+import { TorrentSearchPage } from '@/pages/torrents/TorrentSearchPage'
+import { TrackedAnimesPage } from '@/pages/torrents/TrackedAnimesPage'
 
 const router = createBrowserRouter([
   {
@@ -32,6 +34,8 @@ const router = createBrowserRouter([
       { path: '/franquias/:key', element: <FranchisesPage /> },
       { path: '/listas', element: <SmartListsPage /> },
       { path: '/listas/:listId', element: <SmartListsPage /> },
+      { path: '/torrents', element: <TrackedAnimesPage /> },
+      { path: '/torrents/buscar', element: <TorrentSearchPage /> },
       { path: '/preferencias', element: <PreferencesPage /> },
       { path: '/cache', element: <CachePage /> },
       { path: '/provedores', element: <ProvidersPage /> },
