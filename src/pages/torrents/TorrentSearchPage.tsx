@@ -4,7 +4,13 @@ import { toast } from 'sonner'
 import { useSearchAnilistMedia } from '@/api/generated/endpoints/anilist-search/anilist-search'
 import { useSearchTorrentReleases } from '@/api/generated/endpoints/torrent-search/torrent-search'
 import { useListTrackedAnimes, useTrackAnime } from '@/api/generated/endpoints/torrent-tracking/torrent-tracking'
-import { TorrentProviderType, type AnilistMediaSummary, type TorrentEdition, type TorrentTrackType } from '@/api/generated/model'
+import {
+  TorrentProviderType,
+  type AnilistFuzzyDate,
+  type AnilistMediaSummary,
+  type TorrentEdition,
+  type TorrentTrackType,
+} from '@/api/generated/model'
 import { toastError } from '@/api/errors'
 import { invalidate } from '@/api/query'
 import { usePageMeta } from '@/components/layout/PageMeta'
@@ -12,19 +18,39 @@ import { Button } from '@/components/ui/button'
 import { Chip } from '@/components/ui/chip'
 import { Icon } from '@/components/ui/icon'
 import { Input, SearchInput } from '@/components/ui/input'
-import { Pagination } from '@/components/ui/misc'
+import { KeyValue, Pagination } from '@/components/ui/misc'
 import { Section } from '@/components/ui/section'
 import { Select } from '@/components/ui/select'
 import { EmptyState, ErrorState, Loading } from '@/components/ui/states'
 import { Thumb } from '@/components/ui/thumb'
+import { SEASON_LABEL } from '@/features/item/labels'
 import { AUDIO_TYPE_LABEL, editionName, SOURCE, SUBTITLE_TYPE_LABEL } from '@/features/torrents/labels'
 import { useDebounced } from '@/lib/useDebounced'
-import { cn } from '@/lib/utils'
-import { EditionReleases } from './EditionReleases'
+import { FORMATS, STATUSES } from '@/pages/smart-lists/criteria'
+import { formatBytes } from '@/lib/format'
 
 const PROVIDER_LABEL: Record<TorrentProviderType, string> = { NYAA: 'Nyaa' }
 
 const animeTitle = (a: AnilistMediaSummary) => a.title?.userPreferred ?? a.title?.romaji ?? `AniList ${a.anilistId}`
+
+/** Título sem pontuação para a busca padrão: o provedor exige todas as palavras ("Sensou-hen" ≠ "Sensou Hen"). */
+const searchableTitle = (title: string) =>
+  title
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+const FORMAT_LABEL = Object.fromEntries(FORMATS)
+const STATUS_LABEL = Object.fromEntries(STATUSES)
+
+/** Data parcial da AniList ("04/2025" quando falta o dia). */
+const fuzzyDate = (d: AnilistFuzzyDate | null | undefined) =>
+  d?.year
+    ? [d.day, d.month, d.year]
+        .filter((v) => v != null)
+        .map((v) => String(v).padStart(2, '0'))
+        .join('/')
+    : null
 
 const NO_GROUP = 'Sem grupo'
 
@@ -53,6 +79,27 @@ function matchesFilters(e: TorrentEdition, f: EditionFilters, term: string) {
 function optionsOf(editions: TorrentEdition[], pick: (e: TorrentEdition) => string | null | undefined, all: string) {
   const values = [...new Set(editions.map(pick).filter((v): v is string => !!v))].sort()
   return [{ value: '', label: all }, ...values.map((v) => ({ value: v, label: v }))]
+}
+
+const SIZE_UNITS: Record<string, number> = { Bytes: 1, KiB: 1024, MiB: 1024 ** 2, GiB: 1024 ** 3, TiB: 1024 ** 4 }
+
+/** Bytes do tamanho como o provedor exibe ("1.4 GiB"); `null` se o formato não for reconhecido. */
+function sizeInBytes(size: string | null | undefined) {
+  const match = size?.match(/^([\d.]+)\s*(\w+)$/)
+  const unit = match && SIZE_UNITS[match[2]]
+  return match && unit ? Number(match[1]) * unit : null
+}
+
+const average = (values: number[]) => (values.length ? values.reduce((a, b) => a + b, 0) / values.length : null)
+
+/** Tamanho e seeders médios da edição, sem os pacotes (a não ser que só haja pacotes). */
+function editionAverages(e: TorrentEdition) {
+  const episodes = e.releases.filter((r) => r.episode != null)
+  const releases = episodes.length ? episodes : e.releases
+  return {
+    size: average(releases.map((r) => sizeInBytes(r.size)).filter((v): v is number => v != null)),
+    seeders: average(releases.map((r) => r.seeders).filter((v): v is number => v != null)),
+  }
 }
 
 const trackOptions = (all: string, labels: Record<TorrentTrackType, string>, single: string) => [
@@ -129,23 +176,25 @@ function AnimePicker({ onPick }: { onPick: (anime: AnilistMediaSummary) => void 
 
 function ReleaseSearch({ anime, onChangeAnime }: { anime: AnilistMediaSummary; onChangeAnime: () => void }) {
   const navigate = useNavigate()
-  // O título romaji é o que os grupos de fansub usam no nome das releases.
-  const initialQuery = anime.title?.romaji ?? animeTitle(anime)
   const [provider, setProvider] = useState<TorrentProviderType>('NYAA')
-  const [draft, setDraft] = useState(initialQuery)
-  const [query, setQuery] = useState(initialQuery)
+  const [draft, setDraft] = useState('')
+  // Os grupos de fansub usam o título romaji ou o inglês no nome das releases.
+  const [queries, setQueries] = useState(() => [
+    ...new Set(
+      [anime.title?.romaji ?? animeTitle(anime), anime.title?.english].filter((t): t is string => !!t).map(searchableTitle),
+    ),
+  ])
   const [filter, setFilter] = useState('')
   const [filters, setFilters] = useState(NO_FILTERS)
-  const [open, setOpen] = useState<string | null>(null)
 
-  const search = useSearchTorrentReleases({ provider, q: query }, { query: { enabled: query.length > 0, staleTime: 5 * 60_000 } })
+  const search = useSearchTorrentReleases({ provider, q: queries }, { query: { staleTime: 5 * 60_000 } })
   const tracked = useListTrackedAnimes()
   const trackedHere = tracked.data?.find((t) => t.anilistId === anime.anilistId)
   const track = useTrackAnime()
 
   const startTracking = (edition: TorrentEdition) =>
     track.mutate(
-      { data: { anilistId: anime.anilistId, provider, query, editionKey: edition.key } },
+      { data: { anilistId: anime.anilistId, provider, queries, editionKey: edition.key } },
       {
         onSuccess: async () => {
           await invalidate.torrents()
@@ -164,6 +213,12 @@ function ReleaseSearch({ anime, onChangeAnime }: { anime: AnilistMediaSummary; o
   const filtering = !!term || Object.values(filters).some(Boolean)
   const setFilterValue = (key: keyof EditionFilters) => (value: string) => setFilters({ ...filters, [key]: value })
 
+  const changeQueries = (next: string[]) => {
+    setQueries(next)
+    setFilter('')
+    setFilters(NO_FILTERS)
+  }
+
   return (
     <>
       <Section>
@@ -181,14 +236,13 @@ function ReleaseSearch({ anime, onChangeAnime }: { anime: AnilistMediaSummary; o
             Trocar anime
           </Button>
         </div>
+        <AnimeDetails anime={anime} />
         <form
           className="flex flex-wrap items-center gap-2.5 border-t border-line px-5 py-3"
           onSubmit={(e) => {
             e.preventDefault()
-            setQuery(draft.trim())
-            setOpen(null)
-            setFilter('')
-            setFilters(NO_FILTERS)
+            if (!queries.includes(draft.trim())) changeQueries([...queries, draft.trim()])
+            setDraft('')
           }}
         >
           <Select
@@ -201,12 +255,30 @@ function ReleaseSearch({ anime, onChangeAnime }: { anime: AnilistMediaSummary; o
             className="min-w-[220px] flex-1"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="Texto da busca"
+            placeholder="Outra busca (ex.: Tokyo Revengers S04)"
           />
-          <Button type="submit" variant="primary" icon="search" disabled={!draft.trim()} loading={search.isFetching}>
-            Buscar
+          <Button type="submit" variant="primary" icon="add" disabled={!draft.trim()} loading={search.isFetching}>
+            Adicionar busca
           </Button>
         </form>
+        <div className="flex flex-wrap items-center gap-2 border-t border-line px-5 py-3">
+          <span className="text-sm text-muted">Buscas:</span>
+          {queries.map((q) => (
+            <Chip key={q} mono icon="search">
+              {q}
+              {queries.length > 1 && (
+                <button
+                  type="button"
+                  aria-label={`Remover a busca ${q}`}
+                  className="ml-1 align-middle"
+                  onClick={() => changeQueries(queries.filter((other) => other !== q))}
+                >
+                  <Icon name="close" size={14} />
+                </button>
+              )}
+            </Chip>
+          ))}
+        </div>
       </Section>
 
       {search.isLoading && <Loading label="Buscando no provedor… a busca lê todas as páginas e pode levar alguns segundos." />}
@@ -222,7 +294,7 @@ function ReleaseSearch({ anime, onChangeAnime }: { anime: AnilistMediaSummary; o
           dashed
           icon="search_off"
           title="Nenhuma release encontrada"
-          description={`Nada no provedor para “${query}”.`}
+          description={`Nada no provedor para ${queries.map((q) => `“${q}”`).join(', ')}.`}
         />
       )}
 
@@ -301,37 +373,41 @@ function ReleaseSearch({ anime, onChangeAnime }: { anime: AnilistMediaSummary; o
           </div>
           {editions.map((edition) => {
             const episodes = edition.releases.filter((r) => r.episode != null).length
-            const isOpen = open === edition.key
+            const averages = editionAverages(edition)
             const isTrackedEdition = trackedHere?.editionKey === edition.key
+            const firstPageUrl = edition.releases[0]?.pageUrl
+            const meta = [
+              `${episodes} ${episodes === 1 ? 'episódio' : 'episódios'}`,
+              edition.releases.length > episodes && `${edition.releases.length - episodes} pacote(s)`,
+              averages.size != null && `média de ${formatBytes(averages.size)} por arquivo`,
+              averages.seeders != null && `média de ${Math.round(averages.seeders)} seeders`,
+            ]
+              .filter(Boolean)
+              .join(' · ')
             return (
-              <div key={edition.key} className="border-b border-line last:border-b-0">
-                <div className={cn('flex items-center gap-3 px-5 py-3', isOpen && 'bg-tint')}>
-                  <button
-                    type="button"
-                    className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
-                    onClick={() => setOpen(isOpen ? null : edition.key)}
-                  >
-                    <Icon name={isOpen ? 'expand_less' : 'expand_more'} size={20} className="text-muted" />
-                    <span className="flex min-w-0 flex-col gap-1">
-                      <span className="truncate font-semibold">{editionName(edition.group, edition.label)}</span>
-                      <EditionBadges edition={edition} />
-                      <span className="text-sm text-muted">
-                        {episodes} {episodes === 1 ? 'episódio' : 'episódios'}
-                        {edition.releases.length > episodes && ` · ${edition.releases.length - episodes} pacote(s)`}
-                      </span>
-                    </span>
-                  </button>
-                  <Button
-                    size="sm"
-                    icon="radar"
-                    disabled={!!trackedHere}
-                    loading={track.isPending && track.variables?.data.editionKey === edition.key}
-                    onClick={() => startTracking(edition)}
-                  >
-                    {isTrackedEdition ? 'Rastreada' : 'Rastrear'}
+              <div key={edition.key} className="flex items-center gap-3 border-b border-line px-5 py-3 last:border-b-0">
+                <span className="flex min-w-0 flex-1 flex-col gap-1">
+                  <span className="truncate font-semibold">{editionName(edition.group, edition.label)}</span>
+                  <EditionBadges edition={edition} />
+                  <span className="text-sm text-muted">{meta}</span>
+                </span>
+                {firstPageUrl && (
+                  <Button asChild size="sm">
+                    <a href={firstPageUrl} target="_blank" rel="noopener noreferrer">
+                      <Icon name="open_in_new" size={18} />
+                      Ver no {PROVIDER_LABEL[provider]}
+                    </a>
                   </Button>
-                </div>
-                {isOpen && <EditionReleases releases={edition.releases} provider={provider} anilistId={anime.anilistId} />}
+                )}
+                <Button
+                  size="sm"
+                  icon="radar"
+                  disabled={!!trackedHere}
+                  loading={track.isPending && track.variables?.data.editionKey === edition.key}
+                  onClick={() => startTracking(edition)}
+                >
+                  {isTrackedEdition ? 'Rastreada' : 'Rastrear'}
+                </Button>
               </div>
             )
           })}
@@ -339,6 +415,32 @@ function ReleaseSearch({ anime, onChangeAnime }: { anime: AnilistMediaSummary; o
         </Section>
       )}
     </>
+  )
+}
+
+/** O que ajuda a montar as buscas e escolher a edição: os nomes do anime, quantos episódios tem e quando passou. */
+function AnimeDetails({ anime: a }: { anime: AnilistMediaSummary }) {
+  const season = [a.season ? SEASON_LABEL[a.season] : null, a.seasonYear].filter(Boolean).join(' ')
+  const aired = [fuzzyDate(a.startDate), fuzzyDate(a.endDate)].filter(Boolean).join(' – ')
+  // Os grupos escrevem os nomes em alfabeto latino; sinônimos em outras escritas não servem de busca.
+  const synonyms = a.synonyms?.filter((name) => /^[\p{Script=Latin}\p{N}\p{P}\p{S}\s]+$/u.test(name)) ?? []
+
+  return (
+    <KeyValue
+      className="border-t border-line px-5"
+      labelWidth={140}
+      rows={[
+        { label: 'Romaji', value: a.title?.romaji },
+        { label: 'Inglês', value: a.title?.english },
+        { label: 'Japonês', value: a.title?.nativeTitle },
+        { label: 'Sinônimos', value: synonyms.length ? synonyms.join(', ') : null },
+        { label: 'Formato · estação', value: [a.format && FORMAT_LABEL[a.format], season].filter(Boolean).join(' · ') || null },
+        { label: 'Status', value: a.status ? (STATUS_LABEL[a.status] ?? a.status) : null },
+        { label: 'Episódios', value: a.episodes ?? null, mono: true },
+        { label: 'Exibição', value: aired || null, mono: true },
+        { label: 'Estúdio', value: a.studio },
+      ]}
+    />
   )
 }
 

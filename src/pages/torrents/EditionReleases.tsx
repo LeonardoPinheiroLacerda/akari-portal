@@ -21,7 +21,10 @@ export function EditionReleases({
   anilistId: number
 }) {
   const [pending, setPending] = useState<string | null>(null)
+  const [downloadingAll, setDownloadingAll] = useState(false)
   const start = useStartTorrentDownload()
+  // Episódios ainda não baixados (NEW = saiu do qBittorrent antes de terminar); pacotes repetem episódios.
+  const missing = releases.filter((r) => r.episode != null && (!r.downloadStatus || r.downloadStatus === 'NEW'))
 
   const download = (r: TorrentReleaseResponse) => {
     setPending(r.infoHash)
@@ -39,10 +42,43 @@ export function EditionReleases({
     )
   }
 
+  // Um por vez: o primeiro cria a pasta do anime na biblioteca, os seguintes já a encontram.
+  const downloadAll = async () => {
+    setDownloadingAll(true)
+    try {
+      for (const r of missing) {
+        await start.mutateAsync({ data: { provider, magnetUri: r.magnetUri, title: r.title, anilistId } })
+      }
+      toast.success(`${missing.length} ${missing.length === 1 ? 'episódio enviado' : 'episódios enviados'} para download`)
+    } catch (e) {
+      toastError(e, 'Não foi possível baixar todos os episódios')
+    } finally {
+      await Promise.all([invalidate.torrents(), invalidate.catalog(), invalidate.anime(anilistId)])
+      setDownloadingAll(false)
+    }
+  }
+
   if (!releases.length) return <div className="px-5 py-5 text-13 text-muted">Nenhuma release nesta edição.</div>
 
   return (
     <div className="flex flex-col">
+      {missing.length > 0 && (
+        <div className="flex items-center gap-3 border-b border-line px-5 py-2.5">
+          <span className="flex-1 text-13 text-muted">
+            {missing.length} {missing.length === 1 ? 'episódio para baixar' : 'episódios para baixar'}
+          </span>
+          <Button
+            size="sm"
+            variant="primary"
+            icon="download"
+            loading={downloadingAll}
+            disabled={pending != null}
+            onClick={downloadAll}
+          >
+            Baixar todos
+          </Button>
+        </div>
+      )}
       {releases.map((r) => {
         // NEW = saiu do qBittorrent antes de terminar: pode ser baixada de novo.
         const status = r.downloadStatus && r.downloadStatus !== 'NEW' ? DOWNLOAD_STATUS[r.downloadStatus] : null
@@ -79,7 +115,7 @@ export function EditionReleases({
                 size="sm"
                 icon="download"
                 loading={pending === r.infoHash}
-                disabled={pending != null}
+                disabled={pending != null || downloadingAll}
                 onClick={() => download(r)}
               >
                 Baixar

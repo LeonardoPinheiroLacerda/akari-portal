@@ -5,6 +5,7 @@ import {
   useListTrackedAnimeReleases,
   useListTrackedAnimes,
   useUntrackAnime,
+  useUpdateTrackedAnimeQueries,
 } from '@/api/generated/endpoints/torrent-tracking/torrent-tracking'
 import type { TrackedAnimeResponse } from '@/api/generated/model'
 import { toastError } from '@/api/errors'
@@ -12,6 +13,8 @@ import { invalidate } from '@/api/query'
 import { usePageMeta } from '@/components/layout/PageMeta'
 import { Button } from '@/components/ui/button'
 import { Chip } from '@/components/ui/chip'
+import { Icon } from '@/components/ui/icon'
+import { Input } from '@/components/ui/input'
 import { EmptyState, ErrorState, Loading } from '@/components/ui/states'
 import { Thumb } from '@/components/ui/thumb'
 import { editionName } from '@/features/torrents/labels'
@@ -65,9 +68,13 @@ export function TrackedAnimesPage() {
 function TrackedCard({ tracked: t }: { tracked: TrackedAnimeResponse }) {
   const [open, setOpen] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  const [editingQueries, setEditingQueries] = useState(false)
+  const [draft, setDraft] = useState('')
   // A lista refaz a busca completa no provedor, então só carrega quando aberta.
   const releases = useListTrackedAnimeReleases(t.id, { query: { enabled: open, staleTime: 5 * 60_000 } })
   const untrack = useUntrackAnime()
+  // Fica pendente até recarregar o rastreio e os episódios, que refazem a busca no provedor.
+  const updateQueries = useUpdateTrackedAnimeQueries({ mutation: { onSuccess: () => invalidate.torrents() } })
 
   const remove = () =>
     untrack.mutate(
@@ -78,6 +85,15 @@ function TrackedCard({ tracked: t }: { tracked: TrackedAnimeResponse }) {
           toast.success(`${t.title} não é mais rastreado`)
         },
         onError: (e) => toastError(e),
+      },
+    )
+
+  const saveQueries = (queries: string[]) =>
+    updateQueries.mutate(
+      { trackedId: t.id, data: { queries } },
+      {
+        onSuccess: () => setDraft(''),
+        onError: (e) => toastError(e, 'Não foi possível salvar as buscas'),
       },
     )
 
@@ -100,11 +116,16 @@ function TrackedCard({ tracked: t }: { tracked: TrackedAnimeResponse }) {
               ? `Último episódio encontrado: ${t.latestEpisode}`
               : 'Nenhum episódio numerado encontrado ainda'}
             {' · '}
+            {t.queries.map((q) => `“${q}”`).join(', ')}
+            {' · '}
             {t.lastCheckedAt ? `checado ${formatRelative(t.lastCheckedAt)}` : 'ainda não checado'}
           </span>
           {t.lastError && <span className="text-sm text-[var(--err-fg)]">{t.lastError}</span>}
         </div>
         <div className="flex items-center gap-2">
+          <Button size="sm" icon="manage_search" onClick={() => setEditingQueries(!editingQueries)}>
+            Buscas
+          </Button>
           <Button size="sm" icon={open ? 'expand_less' : 'expand_more'} onClick={() => setOpen(!open)}>
             Episódios
           </Button>
@@ -125,6 +146,46 @@ function TrackedCard({ tracked: t }: { tracked: TrackedAnimeResponse }) {
             Parar de rastrear
           </Button>
         </div>
+      )}
+      {editingQueries && (
+        <form
+          className="flex flex-wrap items-center gap-2 border-t border-line px-5 py-3"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (t.queries.includes(draft.trim())) setDraft('')
+            else saveQueries([...t.queries, draft.trim()])
+          }}
+        >
+          <span className="flex items-center gap-1.5 text-sm text-muted">
+            {updateQueries.isPending && <Icon name="progress_activity" size={16} className="animate-spin" />}
+            {updateQueries.isPending ? 'Salvando buscas…' : 'Buscas:'}
+          </span>
+          {t.queries.map((q) => (
+            <Chip key={q} mono icon="search">
+              {q}
+              {t.queries.length > 1 && (
+                <button
+                  type="button"
+                  aria-label={`Remover a busca ${q}`}
+                  className="ml-1 align-middle"
+                  disabled={updateQueries.isPending}
+                  onClick={() => saveQueries(t.queries.filter((other) => other !== q))}
+                >
+                  <Icon name="close" size={14} />
+                </button>
+              )}
+            </Chip>
+          ))}
+          <Input
+            className="min-w-[220px] flex-1"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Outra busca"
+          />
+          <Button type="submit" size="sm" icon="add" disabled={!draft.trim()} loading={updateQueries.isPending}>
+            Adicionar busca
+          </Button>
+        </form>
       )}
       {open && (
         <div className="border-t border-line">
