@@ -68,6 +68,14 @@ export const getSearchTorrentReleasesUrl = (params: SearchTorrentReleasesParams,
   const normalizedParams = new URLSearchParams();
 
   Object.entries(params || {}).forEach(([key, value]) => {
+    const explodeParameters = ["q"];
+
+    if (Array.isArray(value) && explodeParameters.includes(key)) {
+      value.forEach((v) => {
+        normalizedParams.append(key, v === null ? 'null' : String(v));
+      });
+      return;
+    }
 
     if (value !== undefined) {
       normalizedParams.append(key, value === null ? 'null' : String(value))
@@ -90,6 +98,11 @@ export const getSearchTorrentReleasesUrl = (params: SearchTorrentReleasesParams,
  * vence a de maior versão (`v2` sobre a original) e, empatando, a de mais seeders.
  * Releases sem número de episódio (batches, extras) ficam todas, depois dos episódios.
  * Nenhuma edição é resposta válida.
+ *
+ * Aceita várias queries (`?q=…&q=…`): cada uma é buscada no provedor e as releases são
+ * juntadas, sem repetir a mesma release, antes de agrupar as edições. Serve para os grupos
+ * que escrevem o nome do anime de jeitos diferentes (ex.: com o subtítulo do arco ou só
+ * com a temporada, `S04`). `truncated` vem `true` se o provedor cortou alguma delas.
  * @summary Busca releases num provedor de torrent, agrupadas por edição
  */
 export const searchTorrentReleases = async (params: SearchTorrentReleasesParams, options?: Parameters<typeof http>[1]): Promise<TorrentSearchResultOkResponse> => {

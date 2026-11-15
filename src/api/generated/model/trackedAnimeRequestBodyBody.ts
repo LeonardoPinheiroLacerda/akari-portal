@@ -21,6 +21,6 @@
 import type { TrackedAnimeRequest } from './trackedAnimeRequest';
 
 /**
- * Anime, provedor, query e edição a rastrear
+ * Anime, provedor, queries e edição a rastrear
  */
 export type TrackedAnimeRequestBodyBody = TrackedAnimeRequest;

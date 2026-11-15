@@ -88,8 +88,9 @@ export const getListTorrentDownloadsUrl = (params?: ListTorrentDownloadsParams,)
 }
 
 /**
- * Traz os downloads em andamento (com o progresso) e os já concluídos. Página vazia é
- * resposta válida.
+ * Traz os downloads em andamento (com o progresso) e os já concluídos. Com `userId`, cada
+ * download já na pasta do anime vem com o progresso desse usuário no episódio
+ * (`watchProgress`). Página vazia é resposta válida.
  * @summary Lista paginada dos downloads, do mais recente para o mais antigo
  */
 export const listTorrentDownloads = async (params?: ListTorrentDownloadsParams, options?: Parameters<typeof http>[1]): Promise<TorrentDownloadPageOkResponse> => {
@@ -114,7 +115,7 @@ export const getListTorrentDownloadsQueryKey = (params?: ListTorrentDownloadsPar
     }
 
 
-export const getListTorrentDownloadsQueryOptions = <TData = Awaited<ReturnType<typeof listTorrentDownloads>>, TError = BadRequestResponse | InternalServerErrorResponse>(params?: ListTorrentDownloadsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTorrentDownloads>>, TError, TData>>, request?: SecondParameter<typeof http>}
+export const getListTorrentDownloadsQueryOptions = <TData = Awaited<ReturnType<typeof listTorrentDownloads>>, TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse>(params?: ListTorrentDownloadsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTorrentDownloads>>, TError, TData>>, request?: SecondParameter<typeof http>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -133,10 +134,10 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListTorrentDownloadsQueryResult = NonNullable<Awaited<ReturnType<typeof listTorrentDownloads>>>
-export type ListTorrentDownloadsQueryError = BadRequestResponse | InternalServerErrorResponse
+export type ListTorrentDownloadsQueryError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse
 
 
-export function useListTorrentDownloads<TData = Awaited<ReturnType<typeof listTorrentDownloads>>, TError = BadRequestResponse | InternalServerErrorResponse>(
+export function useListTorrentDownloads<TData = Awaited<ReturnType<typeof listTorrentDownloads>>, TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse>(
  params: undefined |  ListTorrentDownloadsParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTorrentDownloads>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof listTorrentDownloads>>,
@@ -146,7 +147,7 @@ export function useListTorrentDownloads<TData = Awaited<ReturnType<typeof listTo
       >, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListTorrentDownloads<TData = Awaited<ReturnType<typeof listTorrentDownloads>>, TError = BadRequestResponse | InternalServerErrorResponse>(
+export function useListTorrentDownloads<TData = Awaited<ReturnType<typeof listTorrentDownloads>>, TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse>(
  params?: ListTorrentDownloadsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTorrentDownloads>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof listTorrentDownloads>>,
@@ -156,7 +157,7 @@ export function useListTorrentDownloads<TData = Awaited<ReturnType<typeof listTo
       >, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useListTorrentDownloads<TData = Awaited<ReturnType<typeof listTorrentDownloads>>, TError = BadRequestResponse | InternalServerErrorResponse>(
+export function useListTorrentDownloads<TData = Awaited<ReturnType<typeof listTorrentDownloads>>, TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse>(
  params?: ListTorrentDownloadsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTorrentDownloads>>, TError, TData>>, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
@@ -164,7 +165,7 @@ export function useListTorrentDownloads<TData = Awaited<ReturnType<typeof listTo
  * @summary Lista paginada dos downloads, do mais recente para o mais antigo
  */
 
-export function useListTorrentDownloads<TData = Awaited<ReturnType<typeof listTorrentDownloads>>, TError = BadRequestResponse | InternalServerErrorResponse>(
+export function useListTorrentDownloads<TData = Awaited<ReturnType<typeof listTorrentDownloads>>, TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse>(
  params?: ListTorrentDownloadsParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTorrentDownloads>>, TError, TData>>, request?: SecondParameter<typeof http>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {

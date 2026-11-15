@@ -20,6 +20,7 @@
  */
 import type { AnilistId } from './anilistId';
 import type { TorrentProviderType } from './torrentProviderType';
+import type { TrackedAnimeQueries } from './trackedAnimeQueries';
 
 /**
  * Payload de `POST /v1/torrent/tracked`
@@ -27,11 +28,7 @@ import type { TorrentProviderType } from './torrentProviderType';
 export interface TrackedAnimeRequest {
   anilistId: AnilistId;
   provider: TorrentProviderType;
-  /**
-     * Texto de busca no provedor (ex.: o título romaji do anime)
-     * @minLength 1
-     */
-  query: string;
+  queries: TrackedAnimeQueries;
   /**
      * `key` da `TorrentEdition` escolhida na busca dessa query
      * @minLength 1

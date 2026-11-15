@@ -21,9 +21,12 @@
 import type { AnimeBindingSummary } from './animeBindingSummary';
 import type { TorrentDownloadStatus } from './torrentDownloadStatus';
 import type { TorrentProviderType } from './torrentProviderType';
+import type { WatchProgress } from './watchProgress';
 
 /**
- * Uma release baixada (ou baixando) pelo qBittorrent
+ * Uma release baixada (ou baixando) pelo qBittorrent. O arquivo do episódio na pasta do anime
+ * é o de nome igual ao título da release ou, se nenhum tiver, o primeiro com o mesmo número
+ * de episódio.
  */
 export interface TorrentDownloadResponse {
   /** Id do download */
@@ -42,6 +45,21 @@ export interface TorrentDownloadResponse {
   /** Fração já baixada, de `0` a `1` */
   progress: number;
   anime: AnimeBindingSummary;
+  /**
+     * Imagem 16:9 para o card do download: a imagem do episódio no TMDB, em tamanho original
+     * (para cards grandes, como as Novidades na TV), quando o arquivo
+     * do episódio já está na pasta do anime e pareado; senão, o banner do anime. `null` sem
+     * nenhuma das duas.
+     * @nullable
+     */
+  thumbnail?: string | null;
+  /**
+     * Título do episódio no TMDB, quando o arquivo dele já está na pasta do anime e pareado
+     * @nullable
+     */
+  episodeTitle?: string | null;
+  /** Progresso do usuário no episódio. Preenchido só na listagem com `userId`; `null` sem `userId`, com o episódio ainda fora da pasta do anime ou que o usuário nunca abriu. */
+  watchProgress?: WatchProgress | null;
   /** Quando o download foi pedido */
   createdAt: string;
   /**

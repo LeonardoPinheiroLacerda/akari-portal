@@ -48,6 +48,8 @@ import type {
   TorrentEditionOkResponse,
   TrackedAnimeCreatedResponse,
   TrackedAnimeListOkResponse,
+  TrackedAnimeOkResponse,
+  TrackedAnimeQueriesRequestBodyBody,
   TrackedAnimeRequestBodyBody
 } from '../../model';
 
@@ -182,7 +184,7 @@ export const getTrackAnimeUrl = () => {
 }
 
 /**
- * Busca a query no provedor (todas as páginas) e confere que a edição existe nela; o maior
+ * Busca as queries no provedor (todas as páginas) e confere que a edição existe nelas; o maior
  * episódio da edição vira o último encontrado. Um anime só tem um rastreio. Anime vinculado
  * a uma pasta de outro storage provider que não o da biblioteca responde `409`, como no
  * download.
@@ -339,6 +341,96 @@ export const useUntrackAnime = <TError = InternalServerErrorResponse,
       > => {
       return useMutation(getUntrackAnimeMutationOptions(options), queryClient);
     }
+    export const getUpdateTrackedAnimeQueriesUrl = (trackedId: number,) => {
+
+
+
+
+  return `/v1/torrent/tracked/${trackedId}/queries`
+}
+
+/**
+ * Substitui a lista de queries; a edição e o último episódio encontrado continuam. A
+ * próxima checagem já busca com as queries novas.
+ * @summary Troca as queries de busca de um rastreio
+ */
+export const updateTrackedAnimeQueries = async (trackedId: number,
+    trackedAnimeQueriesRequestBodyBody: TrackedAnimeQueriesRequestBodyBody, options?: Parameters<typeof http>[1]): Promise<TrackedAnimeOkResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return http<TrackedAnimeOkResponse>(getUpdateTrackedAnimeQueriesUrl(trackedId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(trackedAnimeQueriesRequestBodyBody)
+  }
+);}
+
+
+
+
+
+export const getUpdateTrackedAnimeQueriesMutationKey = () => ['updateTrackedAnimeQueries'] as const;
+
+export const getUpdateTrackedAnimeQueriesMutationOptions = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTrackedAnimeQueries>>, TError,UpdateTrackedAnimeQueriesMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTrackedAnimeQueries>>, TError,UpdateTrackedAnimeQueriesMutationVariables, TContext> => {
+
+const mutationKey = getUpdateTrackedAnimeQueriesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTrackedAnimeQueries>>, UpdateTrackedAnimeQueriesMutationVariables> = (props) => {
+          const {trackedId,data} = props ?? {};
+
+          return  updateTrackedAnimeQueries(trackedId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTrackedAnimeQueriesMutationResult = NonNullable<Awaited<ReturnType<typeof updateTrackedAnimeQueries>>>
+    export type UpdateTrackedAnimeQueriesMutationBody = TrackedAnimeQueriesRequestBodyBody
+    export type UpdateTrackedAnimeQueriesMutationError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse
+    export type UpdateTrackedAnimeQueriesMutationVariables = {trackedId: number;data: TrackedAnimeQueriesRequestBodyBody}
+
+    /**
+ * @summary Troca as queries de busca de um rastreio
+ */
+export const useUpdateTrackedAnimeQueries = <TError = BadRequestResponse | NotFoundResponse | InternalServerErrorResponse,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTrackedAnimeQueries>>, TError,UpdateTrackedAnimeQueriesMutationVariables, TContext>, request?: SecondParameter<typeof http>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateTrackedAnimeQueries>>,
+        TError,
+        UpdateTrackedAnimeQueriesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateTrackedAnimeQueriesMutationOptions(options), queryClient);
+    }
     export const getListTrackedAnimeReleasesUrl = (trackedId: number,) => {
 
 
@@ -348,7 +440,7 @@ export const useUntrackAnime = <TError = InternalServerErrorResponse,
 }
 
 /**
- * Refaz a busca do rastreio no provedor (todas as páginas) e devolve só a edição
+ * Refaz a busca do rastreio no provedor (todas as páginas de cada query) e devolve só a edição
  * rastreada, com o `downloadStatus` de cada release. Edição que sumiu da busca volta sem
  * releases.
  * @summary Releases da edição rastreada, um por episódio

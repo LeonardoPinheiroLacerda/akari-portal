@@ -36,8 +36,8 @@ export interface TrackedAnimeResponse {
      */
   coverImage?: string | null;
   provider: TorrentProviderType;
-  /** Texto de busca no provedor */
-  query: string;
+  /** Queries de busca no provedor */
+  queries: string[];
   /** `key` da edição rastreada */
   editionKey: string;
   /**

@@ -18,8 +18,8 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { SearchQueryParamParameter } from './searchQueryParamParameter';
 import type { TorrentProviderParamParameter } from './torrentProviderParamParameter';
+import type { TorrentQueriesParamParameter } from './torrentQueriesParamParameter';
 
 export type SearchTorrentReleasesParams = {
 /**
@@ -27,8 +27,8 @@ export type SearchTorrentReleasesParams = {
  */
 provider: TorrentProviderParamParameter;
 /**
- * Texto de busca (obrigatório, não vazio)
- * @minLength 1
+ * Uma ou mais queries de busca no provedor (`?q=…&q=…`), repassadas como vieram
+ * @minItems 1
  */
-q: SearchQueryParamParameter;
+q: TorrentQueriesParamParameter;
 };
