@@ -1,5 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query'
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { queryClient } from '@/api/query'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -26,7 +26,19 @@ const router = createBrowserRouter([
   {
     element: <AppLayout />,
     children: [
-      { path: '/', element: <HomePage /> },
+      {
+        // O stream de ingestão só fica aberto nas telas que o usam: cada SSE prende uma das 6 conexões do navegador.
+        element: (
+          <IngestionLiveProvider>
+            <Outlet />
+          </IngestionLiveProvider>
+        ),
+        children: [
+          { path: '/', element: <HomePage /> },
+          { path: '/ingestao', element: <IngestionPage /> },
+          { path: '/ingestao/:id', element: <IngestionTasksPage /> },
+        ],
+      },
       { path: '/catalogo', element: <CatalogPage /> },
       { path: '/catalogo/:folderId', element: <Navigate to="anilist" replace /> },
       { path: '/catalogo/:folderId/:tab', element: <ItemPage /> },
@@ -39,8 +51,6 @@ const router = createBrowserRouter([
       { path: '/preferencias', element: <PreferencesPage /> },
       { path: '/cache', element: <CachePage /> },
       { path: '/provedores', element: <ProvidersPage /> },
-      { path: '/ingestao', element: <IngestionPage /> },
-      { path: '/ingestao/:id', element: <IngestionTasksPage /> },
       { path: '/notificacoes', element: <NotificationsPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
@@ -53,9 +63,7 @@ export function App() {
       <TooltipProvider delayDuration={250}>
         <PageMetaProvider>
           <NotificationsProvider>
-            <IngestionLiveProvider>
-              <RouterProvider router={router} />
-            </IngestionLiveProvider>
+            <RouterProvider router={router} />
           </NotificationsProvider>
         </PageMetaProvider>
         <Toaster

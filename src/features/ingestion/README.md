@@ -11,8 +11,9 @@ Estado ao vivo da ingestão, compartilhado pelo app inteiro, e os rótulos dos s
 
 ## Ingestão atual ao vivo
 
-O `IngestionLiveProvider` fica montado em volta do router, então o stream fica aberto em qualquer
-tela. `useCurrentIngestion()` devolve a ingestão em andamento, ou a última — `null` se nunca houve
+O `IngestionLiveProvider` fica montado só nas rotas que usam o stream (Home e `/ingestao`), numa
+rota de layout do `App.tsx`: cada SSE prende uma das 6 conexões do navegador por endereço. Nas
+outras telas o catálogo não se recarrega sozinho quando uma ingestão termina. `useCurrentIngestion()` devolve a ingestão em andamento, ou a última — `null` se nunca houve
 (o `204` de `GET /v1/ingestion/current`) — e `useIngestionLive()` o estado do stream (`status`,
 `lastEventAt`).
 
