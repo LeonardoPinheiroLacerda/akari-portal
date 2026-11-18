@@ -22,7 +22,10 @@ type Options<T extends { type: string }> = {
   idleRetryMs?: number
 }
 
-/** EventSource com reconexão exponencial. */
+/**
+ * EventSource com reconexão exponencial. Fica fechado com a aba oculta: cada stream prende uma das 6
+ * conexões do navegador por endereço, e abas em segundo plano esgotariam as da aba visível.
+ */
 export function useEventSource<T extends { type: string }>(
   path: string,
   { events, onMessage, onOpen, enabled = true, closeOn, idleRetryMs = 15_000 }: Options<T>,
@@ -33,9 +36,16 @@ export function useEventSource<T extends { type: string }>(
   handlers.current = { onMessage, onOpen, closeOn }
   const eventsKey = events.join(',')
   const [wake, setWake] = useState(0)
+  const [visible, setVisible] = useState(() => document.visibilityState === 'visible')
 
   useEffect(() => {
-    if (!enabled) return
+    const onVisibilityChange = () => setVisible(document.visibilityState === 'visible')
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [])
+
+  useEffect(() => {
+    if (!enabled || !visible) return
     let es: EventSource | null = null
     let timer: ReturnType<typeof setTimeout> | undefined
     let attempt = 0
@@ -89,7 +99,7 @@ export function useEventSource<T extends { type: string }>(
       clearTimeout(timer)
       es?.close()
     }
-  }, [path, eventsKey, enabled, idleRetryMs, wake])
+  }, [path, eventsKey, enabled, visible, idleRetryMs, wake])
 
   /** Força reconexão imediata (ex.: depois de enfileirar um download). */
   const reconnect = () => setWake((n) => n + 1)

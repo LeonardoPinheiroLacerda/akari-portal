@@ -87,6 +87,8 @@ api:generate`.
   mensagem de cada conexão é um `SNAPSHOT` com o estado inteiro
   ([`src/features/ingestion`](../features/ingestion/README.md)).
 - Em erro, reconecta com espera exponencial (2 s, 4 s… até 30 s).
+- Com a aba oculta, fecha a conexão; ao voltar, reconecta e o `onOpen` (ou o `SNAPSHOT`) recarrega
+  o estado. Cada stream prende uma das 6 conexões do navegador por endereço.
 - `closeOn` fecha a conexão quando um evento indica que não há mais nada a acompanhar, e o hook
   reconecta depois de `idleRetryMs` (15 s por padrão). É o caso do cache: o backend manda `IDLE` e
   fecha o stream quando a fila esvazia, e também logo na inscrição quando não há nada ativo

@@ -50,4 +50,5 @@ export const invalidate = {
   cache: () => invalidatePrefixes('/v1/cache/', '/v1/playback/files/'),
   settings: () => invalidatePrefixes('/v1/settings'),
   smartLists: () => invalidatePrefixes('/v1/smart-lists'),
+  torrents: () => invalidatePrefixes('/v1/torrent/'),
 }

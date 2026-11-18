@@ -14,11 +14,25 @@ import { Select } from '@/components/ui/select'
 import { ErrorState, Loading } from '@/components/ui/states'
 import { Switch } from '@/components/ui/switch'
 import { ISO639_2, TMDB_LOCALES } from '@/features/item/labels'
+import { providerName } from '@/features/providers/types'
+import { useProviders } from '@/features/providers/useProviders'
 import { formatRelative, humanizeIsoDuration } from '@/lib/format'
 import { useDebounced } from '@/lib/useDebounced'
 import { cn } from '@/lib/utils'
 
-type Kind = 'path' | 'bytes' | 'duration' | 'enum' | 'secret' | 'locale' | 'tmdbLang' | 'langList' | 'trackLang' | 'bool' | 'text'
+type Kind =
+  | 'path'
+  | 'bytes'
+  | 'duration'
+  | 'enum'
+  | 'secret'
+  | 'locale'
+  | 'tmdbLang'
+  | 'langList'
+  | 'trackLang'
+  | 'bool'
+  | 'localProvider'
+  | 'text'
 type Meta = {
   label: string
   hint: string
@@ -69,6 +83,12 @@ const META: Record<string, Meta> = {
     kind: 'tmdbLang',
     width: 260,
     emptyLabel: 'Padrão do TMDB (inglês)',
+  },
+  'tmdb.episode.refresh-window': {
+    label: 'Atualização dos episódios recentes',
+    hint: 'Por quanto tempo o pareamento de um episódio novo é refeito a cada 6 h, para pegar miniatura, nome e sinopse que o TMDB publica depois. Conta da exibição ou, sem par, da chegada do arquivo (ISO-8601, ex.: P30D).',
+    kind: 'duration',
+    width: 160,
   },
   'tmdb.override.fallback-language': {
     label: 'Idioma de fallback',
@@ -147,6 +167,12 @@ const META: Record<string, Meta> = {
     kind: 'bytes',
     width: 260,
   },
+  'torrent.library-provider-id': {
+    label: 'Biblioteca dos downloads',
+    hint: 'Provedor LOCAL para onde vão os episódios baixados por torrent, cada anime na sua pasta. Sem ele, não dá para baixar nem rastrear.',
+    kind: 'localProvider',
+    width: 260,
+  },
 }
 
 const GROUPS: [string, string][] = [
@@ -154,6 +180,7 @@ const GROUPS: [string, string][] = [
   ['anilist', 'AniList'],
   ['playback', 'Reprodução'],
   ['cache', 'Cache de vídeo'],
+  ['torrent', 'Torrents'],
 ]
 
 const ORDER = Object.keys(META)
@@ -339,6 +366,19 @@ function SettingRow({ setting: s }: { setting: SettingResponse }) {
       )
       break
     }
+    case 'localProvider':
+      control = (
+        <LocalProviderSelect
+          value={value}
+          onChange={(v) => {
+            setValue(v)
+            setError(null)
+          }}
+          label={meta.label}
+          width={meta.width}
+        />
+      )
+      break
     case 'bytes': {
       const n = Number(value)
       const gb =
@@ -388,6 +428,40 @@ const splitLangs = (v: string) =>
     .split(',')
     .map((x) => x.trim())
     .filter(Boolean)
+
+/**
+ * Provedores `LOCAL`, os únicos que recebem os downloads. Um valor que não está na lista (provedor
+ * apagado ou de outro tipo) continua como opção, com o motivo, para não sumir em silêncio.
+ */
+function LocalProviderSelect({
+  value,
+  onChange,
+  label,
+  width,
+}: {
+  value: string
+  onChange: (value: string) => void
+  label: string
+  width?: number
+}) {
+  const { providers, byId, isLoading } = useProviders()
+  const opts = [
+    { value: '', label: 'Nenhum' },
+    ...providers.filter((p) => p.type === 'LOCAL').map((p) => ({ value: String(p.id), label: providerName(p) })),
+  ]
+
+  if (value && !opts.some((o) => o.value === value)) {
+    const provider = byId.get(Number(value))
+    const reason = provider ? `${providerName(provider)} · não é LOCAL` : `#${value} · não existe`
+    opts.push({ value, label: isLoading ? `#${value}` : reason })
+  }
+
+  return (
+    <div style={{ width }} className="max-w-full">
+      <Select value={value} onChange={onChange} options={opts} aria-label={label} className="h-9" />
+    </div>
+  )
+}
 
 /** Lista ordenada de idiomas, gravada como `en-US,ja,none`. */
 function LangList({

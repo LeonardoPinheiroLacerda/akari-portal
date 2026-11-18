@@ -34,6 +34,8 @@
  *   método, `Content-Type` ou `Accept` não suportados.
  * - `INTEGRATION_ERROR` (502): um sistema externo (AniList, TMDB, rclone, ffprobe)
  *   falhou ou está indisponível.
+ * - `RATE_LIMITED` (429): um sistema externo (ex.: um provedor de torrent) recusou a
+ *   chamada por excesso de requisições; o `message` diz quando tentar de novo.
  * - `INTEGRATION_NOT_CONFIGURED` (503): uma preferência obrigatória está sem valor —
  *   o admin precisa configurá-la em
  *   `PUT /v1/settings/{key}`.
@@ -52,6 +54,7 @@ export const ApiErrorCode = {
   CONFLICT: 'CONFLICT',
   REQUEST_ERROR: 'REQUEST_ERROR',
   INTEGRATION_ERROR: 'INTEGRATION_ERROR',
+  RATE_LIMITED: 'RATE_LIMITED',
   INTEGRATION_NOT_CONFIGURED: 'INTEGRATION_NOT_CONFIGURED',
   TRANSCODE_FAILED: 'TRANSCODE_FAILED',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
